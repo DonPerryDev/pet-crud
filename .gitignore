@@ -167,7 +167,6 @@ build/
 /.kotlin/
 docs
 
-CLAUDE.md
 .claude
 
 applications/app-service/bin
