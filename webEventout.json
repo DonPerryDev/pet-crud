@@ -1,6 +1,0 @@
-{
-  "type": "deposito",
-  "message": "string",
-  "date": "date-time",
-  "subject": "string"
-}

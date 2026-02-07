@@ -15,7 +15,7 @@ class UserAdapter(
     override fun getByEmail(mail: String): Mono<User> =
         webClient
             .get()
-            .uri("/disabled/v1/users/email/{email}", mail)
+            .uri("/api/v1/users/email/{email}", mail)
             .retrieve()
             .bodyToMono(UserData::class.java)
             .map { UserMapper.toUser(it) }
