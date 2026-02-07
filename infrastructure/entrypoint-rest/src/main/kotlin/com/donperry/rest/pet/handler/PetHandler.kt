@@ -17,18 +17,33 @@ class PetHandler(
     }
 
     fun registerPet(request: ServerRequest): Mono<ServerResponse> {
+        logger.info("Received pet registration request")
+        
         return request
             .bodyToMono(RegisterPetRequest::class.java)
-            .map { registerPetUseCase.execute(
-                it.name,
-                it.species,
-                it.breed,
-                it.age,
-                it.owner
-            ) }
-            .flatMap { ServerResponse.ok().build() }
-            .onErrorResume {
-                logger.warning("Error on readNotification: ${it.message}")
+            .doOnNext { 
+                logger.fine("Processing pet registration for: name=${it.name}, species=${it.species}, breed=${it.breed}, age=${it.age}, owner=${it.owner}")
+            }
+            .flatMap {
+                logger.info("Executing pet registration use case for pet: ${it.name}")
+                registerPetUseCase.execute(
+                    it.name,
+                    it.species,
+                    it.breed,
+                    it.age,
+                    it.owner
+                )
+            }
+            .doOnNext { pet ->
+                logger.info("Pet registered successfully with ID: ${pet.id}")
+            }
+            .flatMap { 
+                logger.info("Returning successful response for pet registration")
+                ServerResponse.ok().build() 
+            }
+            .onErrorResume { throwable ->
+                logger.warning("Error during pet registration: ${throwable.message}")
+                logger.fine("Error details: ${throwable.stackTraceToString()}")
                 ServerResponse.badRequest().build()
             }
     }

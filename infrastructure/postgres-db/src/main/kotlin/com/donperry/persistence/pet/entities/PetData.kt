@@ -18,7 +18,7 @@ data class PetData(
     val breed: String? = null,
     @Column("age")
     val age: Int,
-    @Column("gender")
+    @Column("owner")
     val owner: String,
     @Column("registration_date")
     val registrationDate: LocalDate,
