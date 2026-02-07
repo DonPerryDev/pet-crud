@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: pet-app
+
+app:
+  security:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3005}
+
+management:
+  health:
+    defaults:
+      enabled: true
+    custom:
+      enabled: true
+      status: UP
+  endpoints:
+    web:
+      base-path: /management
+      exposure:
+        include: health
