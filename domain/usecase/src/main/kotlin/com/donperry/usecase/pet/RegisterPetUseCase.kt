@@ -2,6 +2,7 @@ package com.donperry.usecase.pet
 
 import com.donperry.model.pet.Pet
 import com.donperry.model.pet.gateway.PetPersistenceGateway
+import reactor.core.publisher.Mono
 import java.time.LocalDate
 import java.util.UUID
 
@@ -14,7 +15,7 @@ class RegisterPetUseCase(
         breed: String?,
         age: Int,
         owner: String
-    ): Pet {
+    ): Mono<Pet> {
         val pet = Pet(
             id = UUID.randomUUID().toString(),
             name = name,
