@@ -18,7 +18,6 @@ class PetHandler(
 
     fun registerPet(request: ServerRequest): Mono<ServerResponse> {
         logger.info("Received pet registration request")
-        
         return request
             .bodyToMono(RegisterPetRequest::class.java)
             .doOnNext { 

@@ -6,6 +6,14 @@ spring:
     username: ${R2DBC_USERNAME:petapp}
     password: ${R2DBC_PASSWORD:petapp123}
     driver: ${R2DBC_DRIVER:postgresql}
+  devtools:
+    restart:
+      additional-paths:
+        - ../../domain/model/src/main
+        - ../../domain/usecase/src/main
+        - ../../infrastructure/entrypoint-rest/src/main
+        - ../../infrastructure/postgres-db/src/main
+        - ../../infrastructure/client-rest/src/main
 
 app:
   security:
