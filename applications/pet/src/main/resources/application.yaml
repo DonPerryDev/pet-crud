@@ -1,12 +1,19 @@
 spring:
   application:
     name: pet-app
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/local?currentSchema=petapp}
+    username: ${R2DBC_USERNAME:postgres}
+    password: ${R2DBC_PASSWORD:postgres}
+    driver: ${R2DBC_DRIVER:postgresql}
 
 app:
   security:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3005}
 
 management:
+  server:
+    port: ${MANAGEMENT_PORT:9090}
   health:
     defaults:
       enabled: true

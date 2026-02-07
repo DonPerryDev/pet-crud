@@ -17,6 +17,8 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework:spring-context")
+
+    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 }
 
 tasks.register<Copy>("explodedJar") {
