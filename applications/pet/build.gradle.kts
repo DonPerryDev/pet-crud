@@ -22,6 +22,8 @@ dependencies {
 }
 
 tasks.register<Copy>("explodedJar") {
+    description = "Extracts the JAR contents into an exploded directory"
+    group = "build"
     with(tasks.jar.get())
     into(layout.buildDirectory.dir("exploded"))
 }

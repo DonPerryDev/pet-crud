@@ -4,7 +4,6 @@ import com.donperry.model.pet.Pet
 import com.donperry.model.pet.gateway.PetPersistenceGateway
 import reactor.core.publisher.Mono
 import java.time.LocalDate
-import java.util.UUID
 import java.util.logging.Logger
 
 class RegisterPetUseCase(
