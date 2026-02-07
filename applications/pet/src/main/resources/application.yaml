@@ -2,6 +2,7 @@ spring:
   application:
     name: pet-app
   r2dbc:
+#    url: ${R2DBC_URL:r2dbc:postgresql://host.docker.internal:5435/local?currentSchema=petapp}
     url: ${R2DBC_URL:r2dbc:postgresql://localhost:5435/local?currentSchema=petapp}
     username: ${R2DBC_USERNAME:petapp}
     password: ${R2DBC_PASSWORD:petapp123}
