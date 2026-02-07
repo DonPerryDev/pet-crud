@@ -2,9 +2,9 @@ spring:
   application:
     name: pet-app
   r2dbc:
-    url: ${R2DBC_URL:r2dbc:postgresql://localhost:5432/local?currentSchema=petapp}
-    username: ${R2DBC_USERNAME:postgres}
-    password: ${R2DBC_PASSWORD:postgres}
+    url: ${R2DBC_URL:r2dbc:postgresql://localhost:5435/local?currentSchema=petapp}
+    username: ${R2DBC_USERNAME:petapp}
+    password: ${R2DBC_PASSWORD:petapp123}
     driver: ${R2DBC_DRIVER:postgresql}
 
 app:
