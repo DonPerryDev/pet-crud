@@ -4,7 +4,7 @@ This is a Kotlin application built with the Spring framework.
 
 ## Prerequisites
 
-- JDK 11 or higher
+- JDK 21 or higher
 - Gradle
 
 ## Getting Started
@@ -16,4 +16,7 @@ To run the application, execute the following command:
 ```shell
 ./gradlew clean build
 ./gradlew bootRun
+
+gradle projects  
+gradle :pet:bootRun
 ```

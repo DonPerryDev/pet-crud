@@ -16,15 +16,24 @@ subprojects {
     apply(plugin = "org.springframework.boot")
     apply(plugin = "kotlin-spring")
     apply(plugin = "jacoco")
-
-    dependencies {
-        implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
-        implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
-        implementation("org.springframework.boot:spring-boot-starter-actuator")
-        testImplementation("org.springframework.boot:spring-boot-starter-test")
-        testImplementation("io.projectreactor:reactor-test")
-        testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-        testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    if (project.name != "usecase" || project.name != "model") {
+        dependencies {
+            implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+            implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+            implementation("org.springframework.boot:spring-boot-starter-actuator")
+            testImplementation("org.springframework.boot:spring-boot-starter-test")
+            testImplementation("io.projectreactor:reactor-test")
+            testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+            testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+        }
+    }else {
+        dependencies {
+            implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+            implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
+            testImplementation("io.projectreactor:reactor-test")
+            testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
+            testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+        }
     }
 
     plugins.withId("org.springframework.boot") {
