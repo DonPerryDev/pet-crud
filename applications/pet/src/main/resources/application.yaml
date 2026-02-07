@@ -1,18 +1,35 @@
 spring:
   application:
     name: pet-app
+  r2dbc:
+    url: ${R2DBC_URL:r2dbc:postgresql://localhost:5435/local?currentSchema=petapp}
+    username: ${R2DBC_USERNAME:petapp}
+    password: ${R2DBC_PASSWORD:petapp123}
+
+  devtools:
+    restart:
+      additional-paths:
+        - ../../domain/model/src/main
+        - ../../domain/usecase/src/main
+        - ../../infrastructure/entrypoint-rest/src/main
+        - ../../infrastructure/postgres-db/src/main
+        - ../../infrastructure/client-rest/src/main
+        - ../../infrastructure/s3-storage/src/main
+
+  codec:
+    max-in-memory-size: 10MB
+
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME:pet-app-photos}
 
 app:
   security:
     allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3005}
 
 management:
-  health:
-    defaults:
-      enabled: true
-    custom:
-      enabled: true
-      status: UP
+  server:
+    port: ${MANAGEMENT_PORT:9090}
   endpoints:
     web:
       base-path: /management

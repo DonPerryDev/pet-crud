@@ -5,6 +5,7 @@ dependencies {
     implementation(project(":rest"))
     implementation(project(":usecase"))
     implementation(project(":persistence"))
+    implementation(project(":s3-storage"))
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter")
     configurations {
@@ -17,9 +18,13 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework:spring-context")
+
+    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
 }
 
 tasks.register<Copy>("explodedJar") {
+    description = "Extracts the JAR contents into an exploded directory"
+    group = "build"
     with(tasks.jar.get())
     into(layout.buildDirectory.dir("exploded"))
 }

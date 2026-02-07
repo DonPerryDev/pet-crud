@@ -1,6 +1,6 @@
 package com.donperry.rest.security
 
-import com.donperry.app.security.CorsGlobalConfig
+import com.donperry.rest.security.CorsGlobalConfig
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
