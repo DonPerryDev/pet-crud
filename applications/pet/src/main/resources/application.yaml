@@ -5,7 +5,7 @@ spring:
     url: ${R2DBC_URL:r2dbc:postgresql://localhost:5435/local?currentSchema=petapp}
     username: ${R2DBC_USERNAME:petapp}
     password: ${R2DBC_PASSWORD:petapp123}
-    driver: ${R2DBC_DRIVER:postgresql}
+
   devtools:
     restart:
       additional-paths:

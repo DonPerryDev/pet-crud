@@ -44,7 +44,7 @@ class UserAdapterTest {
         val expectedUser = User(id = userId, email = email)
 
         whenever(webClient.get()).thenReturn(requestHeadersUriSpec)
-        whenever(requestHeadersUriSpec.uri(eq("/disabled/v1/users/email/{email}"), eq(email)))
+        whenever(requestHeadersUriSpec.uri(eq("/api/v1/users/email/{email}"), eq(email)))
             .thenReturn(requestHeadersSpec)
         whenever(requestHeadersSpec.retrieve()).thenReturn(responseSpec)
         whenever(responseSpec.bodyToMono(UserData::class.java)).thenReturn(Mono.just(userData))
@@ -55,7 +55,7 @@ class UserAdapterTest {
             .verifyComplete()
 
         verify(webClient).get()
-        verify(requestHeadersUriSpec).uri("/disabled/v1/users/email/{email}", email)
+        verify(requestHeadersUriSpec).uri("/api/v1/users/email/{email}", email)
         verify(requestHeadersSpec).retrieve()
         verify(responseSpec).bodyToMono(UserData::class.java)
     }
@@ -66,7 +66,7 @@ class UserAdapterTest {
         val error = RuntimeException("WebClient error")
 
         whenever(webClient.get()).thenReturn(requestHeadersUriSpec)
-        whenever(requestHeadersUriSpec.uri(eq("/disabled/v1/users/email/{email}"), eq(email)))
+        whenever(requestHeadersUriSpec.uri(eq("/api/v1/users/email/{email}"), eq(email)))
             .thenReturn(requestHeadersSpec)
         whenever(requestHeadersSpec.retrieve()).thenReturn(responseSpec)
         whenever(responseSpec.bodyToMono(UserData::class.java)).thenReturn(Mono.error(error))
@@ -77,7 +77,7 @@ class UserAdapterTest {
             .verify()
 
         verify(webClient).get()
-        verify(requestHeadersUriSpec).uri("/disabled/v1/users/email/{email}", email)
+        verify(requestHeadersUriSpec).uri("/api/v1/users/email/{email}", email)
         verify(requestHeadersSpec).retrieve()
         verify(responseSpec).bodyToMono(UserData::class.java)
     }
@@ -87,7 +87,7 @@ class UserAdapterTest {
         val email = "empty@example.com"
 
         whenever(webClient.get()).thenReturn(requestHeadersUriSpec)
-        whenever(requestHeadersUriSpec.uri(eq("/disabled/v1/users/email/{email}"), eq(email)))
+        whenever(requestHeadersUriSpec.uri(eq("/api/v1/users/email/{email}"), eq(email)))
             .thenReturn(requestHeadersSpec)
         whenever(requestHeadersSpec.retrieve()).thenReturn(responseSpec)
         whenever(responseSpec.bodyToMono(UserData::class.java)).thenReturn(Mono.empty())
@@ -97,7 +97,7 @@ class UserAdapterTest {
             .verifyComplete()
 
         verify(webClient).get()
-        verify(requestHeadersUriSpec).uri("/disabled/v1/users/email/{email}", email)
+        verify(requestHeadersUriSpec).uri("/api/v1/users/email/{email}", email)
         verify(requestHeadersSpec).retrieve()
         verify(responseSpec).bodyToMono(UserData::class.java)
     }
