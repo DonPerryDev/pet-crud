@@ -22,7 +22,8 @@ services:
     depends_on:
       - postgres
     environment:
-      R2DBC_URL: r2dbc:postgresql://host.docker.internal:5435/local?currentSchema=petapp
+      R2DBC_URL: r2dbc:postgresql://postgres:5432/local?currentSchema=petapp
+#      R2DBC_URL: r2dbc:postgresql:/host.docker.internal:5435/local?currentSchema=petapp
       R2DBC_USERNAME: petapp
       R2DBC_PASSWORD: petapp123
     networks:
