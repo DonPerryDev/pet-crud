@@ -84,8 +84,47 @@ docker-compose up --build
 - Infrastructure modules (`:rest`, `:persistence`, `:client-rest`) depend on domain modules
 - Only the `:pet` application module produces a bootable JAR
 
+## Testing
+
+### Test Commands
+```bash
+# Run all tests
+./gradlew test
+
+# Run tests with merged coverage report
+./gradlew testWithMergedCoverage
+
+# Run tests for specific module
+./gradlew :model:test
+./gradlew :usecase:test
+./gradlew :rest:test
+./gradlew :persistence:test
+
+# Generate coverage reports
+./gradlew jacocoTestReport           # Individual module reports
+./gradlew jacocoMergedReport         # Combined coverage report
+```
+
+### Testing Architecture
+- **Pure Unit Tests** - No Spring context required
+- **JUnit 5** with Kotlin test extensions
+- **Mockito** with Kotlin support for mocking
+- **StepVerifier** for reactive stream testing
+- **WebTestClient** for router function testing
+- **Coverage Reports** - JaCoCo with merged reporting
+
+### Test Structure by Layer
+```
+1. Entrypoint Tests (Router)    - Routing, content type validation
+2. Handler Tests               - Request/response, error scenarios  
+3. Use Case Tests              - Business logic, pure unit tests
+4. Adapter Tests               - Persistence, data transformation
+5. Model/DTO Tests             - Domain models, data classes
+```
+
 ## Development Notes
 - The application uses reactive programming with Reactor and Kotlin coroutines
 - Database operations are non-blocking using R2DBC
 - Clean architecture enforced through module boundaries
 - JaCoCo coverage reports generated automatically on build
+- All tests are isolated unit tests without Spring Boot context

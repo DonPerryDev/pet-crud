@@ -352,38 +352,206 @@ fun {action}{Entity}UseCase({entity}PersistenceGateway: {Entity}PersistenceGatew
 4. **Null Safety**: Leverage Kotlin null safety, use `?` for nullable types
 5. **Immutability**: Prefer `data class` and `val` over `var`
 
-### Testing Patterns
+## 🧪 Testing Guide
+
+### Testing Architecture
+- **Pure Unit Tests** - No Spring context required for faster execution
+- **JUnit 5** with Kotlin test extensions
+- **Mockito** with Kotlin support (`org.mockito.kotlin`) 
+- **StepVerifier** for reactive stream testing
+- **WebTestClient** for router function testing
+
+### Testing by Layer (Examples)
+
+#### 1. Router/Entrypoint Tests
 ```kotlin
-// Example test structure
-@ExtendWith(MockKExtension::class)
-class {Action}{Entity}UseCaseTest {
+@ExtendWith(MockitoExtension::class)
+class PetRouterTest {
+    @Mock
+    private lateinit var petHandler: PetHandler
     
-    @MockK
-    private lateinit var {entity}PersistenceGateway: {Entity}PersistenceGateway
-    
-    private lateinit var {action}{Entity}UseCase: {Action}{Entity}UseCase
-    
+    private lateinit var webTestClient: WebTestClient
+    private lateinit var petRouter: PetRouter
+
     @BeforeEach
     fun setUp() {
-        {action}{Entity}UseCase = {Action}{Entity}UseCase({entity}PersistenceGateway)
+        petRouter = PetRouter(petHandler)
+        val routerFunction = petRouter.petRoutes(petHandler)
+        webTestClient = WebTestClient.bindToRouterFunction(routerFunction).build()
     }
-    
+
     @Test
-    fun `should {action} {entity} successfully`() {
+    fun `POST api pets should route to register pet handler`() {
         // Given
-        val {entity} = {Entity}(name = "Test", description = "Test Description")
-        every { {entity}PersistenceGateway.save(any()) } returns Mono.just({entity})
-        
+        val request = RegisterPetRequest("Buddy", "Dog", "Golden Retriever", 3, "John Doe")
+        `when`(petHandler.registerPet(any())).thenReturn(ServerResponse.ok().build())
+
+        // When & Then
+        webTestClient
+            .post()
+            .uri("/api/pets")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus().isOk
+    }
+}
+```
+
+#### 2. Handler Tests
+```kotlin
+@ExtendWith(MockitoExtension::class)
+class PetHandlerTest {
+    @Mock
+    private lateinit var registerPetUseCase: RegisterPetUseCase
+
+    private lateinit var petHandler: PetHandler
+
+    @Test
+    fun `registerPet should process valid request and return ok response`() {
+        // Given
+        val request = RegisterPetRequest("Buddy", "Dog", "Golden Retriever", 3, "John Doe")
+        val expectedPet = Pet(
+            id = "pet-123", name = "Buddy", species = "Dog", 
+            breed = "Golden Retriever", age = 3, owner = "John Doe",
+            registrationDate = LocalDate.now()
+        )
+
+        val serverRequest = MockServerRequest.builder().body(Mono.just(request))
+        `when`(registerPetUseCase.execute("Buddy", "Dog", "Golden Retriever", 3, "John Doe"))
+            .thenReturn(Mono.just(expectedPet))
+
         // When
-        val result = {action}{Entity}UseCase.execute("Test", "Test Description")
-        
+        val result = petHandler.registerPet(serverRequest)
+
         // Then
         StepVerifier.create(result)
-            .expectNext({entity})
+            .expectNextMatches { response -> response.statusCode().value() == 200 }
             .verifyComplete()
     }
 }
 ```
+
+#### 3. Use Case Tests
+```kotlin
+@ExtendWith(MockitoExtension::class)
+class RegisterPetUseCaseTest {
+    @Mock
+    private lateinit var petPersistenceGateway: PetPersistenceGateway
+    
+    private lateinit var registerPetUseCase: RegisterPetUseCase
+    
+    @BeforeEach
+    fun setUp() {
+        registerPetUseCase = RegisterPetUseCase(petPersistenceGateway)
+    }
+    
+    @Test
+    fun `execute should create pet with all fields and save successfully`() {
+        // Given
+        val savedPet = Pet(
+            id = "pet-123", name = "Buddy", species = "Dog",
+            breed = "Golden Retriever", age = 3, owner = "John Doe",
+            registrationDate = LocalDate.now()
+        )
+        `when`(petPersistenceGateway.save(any())).thenReturn(Mono.just(savedPet))
+
+        // When
+        val result = registerPetUseCase.execute("Buddy", "Dog", "Golden Retriever", 3, "John Doe")
+
+        // Then
+        StepVerifier.create(result)
+            .expectNext(savedPet)
+            .verifyComplete()
+
+        val petCaptor = argumentCaptor<Pet>()
+        verify(petPersistenceGateway).save(petCaptor.capture())
+        assertEquals("Buddy", petCaptor.firstValue.name)
+    }
+}
+```
+
+#### 4. Persistence Adapter Tests
+```kotlin
+@ExtendWith(MockitoExtension::class)
+class PetPersistenceAdapterTest {
+    @Mock
+    private lateinit var petRepository: PetRepository
+
+    private lateinit var petPersistenceAdapter: PetPersistenceAdapter
+
+    @Test
+    fun `save should convert model to entity, save and convert back to model`() {
+        // Given
+        val petModel = Pet(null, "Buddy", "Dog", "Golden Retriever", 3, "John Doe", LocalDate.now())
+        val savedPetData = PetData(UUID.randomUUID(), "Buddy", "Dog", "Golden Retriever", 3, "John Doe", LocalDate.now())
+
+        `when`(petRepository.save(any<PetData>())).thenReturn(Mono.just(savedPetData))
+
+        // When
+        val result = petPersistenceAdapter.save(petModel)
+
+        // Then
+        StepVerifier.create(result)
+            .expectNextMatches { savedPet ->
+                savedPet.id == savedPetData.id.toString() && savedPet.name == "Buddy"
+            }
+            .verifyComplete()
+    }
+}
+```
+
+#### 5. Model/DTO Tests
+```kotlin
+class PetTest {
+    @Test
+    fun `Pet should be created with all required fields`() {
+        // When
+        val pet = Pet(
+            id = "pet-123", name = "Buddy", species = "Dog",
+            breed = "Golden Retriever", age = 3, owner = "John Doe",
+            registrationDate = LocalDate.of(2023, 12, 25)
+        )
+
+        // Then
+        assertEquals("pet-123", pet.id)
+        assertEquals("Buddy", pet.name)
+        assertEquals("Dog", pet.species)
+        assertEquals("Golden Retriever", pet.breed)
+    }
+    
+    @Test
+    fun `Pet equality should work correctly with same data`() {
+        // Given
+        val pet1 = Pet("pet-123", "Buddy", "Dog", "Golden Retriever", 3, "John Doe", LocalDate.now())
+        val pet2 = Pet("pet-123", "Buddy", "Dog", "Golden Retriever", 3, "John Doe", LocalDate.now())
+
+        // Then
+        assertEquals(pet1, pet2)
+        assertEquals(pet1.hashCode(), pet2.hashCode())
+    }
+}
+```
+
+### Test Commands
+```bash
+# Run all tests
+./gradlew test
+
+# Run tests with merged coverage report
+./gradlew testWithMergedCoverage
+
+# Run specific module tests
+./gradlew :model:test :usecase:test :rest:test :persistence:test
+
+# Generate coverage reports
+./gradlew jacocoTestReport           # Individual modules
+./gradlew jacocoMergedReport         # Combined report
+```
+
+### Test Coverage Reports
+- **Individual Module**: `{module}/build/reports/jacoco/test/html/index.html`
+- **Merged Report**: `build/reports/jacoco/jacocoMergedReport/html/index.html`
 
 ### Module Dependencies in build.gradle.kts
 ```kotlin
@@ -439,12 +607,39 @@ docker-compose up --build
 5. Write tests following the established patterns
 6. Update module dependencies if needed
 
+### Testing Best Practices
+
+#### Test Organization
+- **Layer Isolation**: Test each layer independently with mocked dependencies
+- **Pure Unit Tests**: Avoid Spring context for faster test execution
+- **Reactive Testing**: Always use StepVerifier for Mono/Flux testing
+- **Error Scenarios**: Test both success and failure paths
+- **Edge Cases**: Test null values, empty collections, boundary conditions
+
+#### Naming Conventions
+- Test classes: `{ClassName}Test`
+- Test methods: backticks with descriptive scenarios (`should do something when condition`)
+- Mock variables: same name as dependency with `Mock` suffix
+
+#### Test Data
+- Use `LocalDate.now()` for current dates in tests
+- Create realistic test data that reflects actual usage
+- Use factory methods for complex test object creation
+
+#### Coverage Goals
+- **Use Cases**: 100% line coverage (pure business logic)
+- **Adapters**: 95%+ line coverage (data transformation)
+- **Handlers**: 90%+ line coverage (request/response processing)
+- **Models/DTOs**: Focus on equality, serialization, edge cases
+
 ### Don't:
 - ❌ Mix business logic with framework code
 - ❌ Put Spring annotations in domain/usecase modules
 - ❌ Use blocking operations (use reactive alternatives)
 - ❌ Skip error handling and logging
 - ❌ Create circular dependencies between modules
+- ❌ Write integration tests when unit tests suffice
+- ❌ Mock value objects or data classes
 
 ### Do:
 - ✅ Follow hexagonal architecture principles
@@ -453,7 +648,10 @@ docker-compose up --build
 - ✅ Write reactive code with proper error handling
 - ✅ Maintain clean separation of concerns
 - ✅ Follow established naming conventions
+- ✅ Write tests before or alongside implementation
+- ✅ Use StepVerifier for all reactive streams
+- ✅ Test edge cases and error conditions
 
 ---
 
-This guide ensures consistent, maintainable, and architecturally sound code generation across all AI development tools.
+This guide ensures consistent, maintainable, and architecturally sound code generation across all AI development tools with comprehensive testing practices.
