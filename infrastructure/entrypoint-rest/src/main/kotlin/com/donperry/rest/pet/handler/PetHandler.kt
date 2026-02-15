@@ -35,7 +35,7 @@ class PetHandler(
     }
 
     fun registerPet(request: ServerRequest): Mono<ServerResponse> {
-        logger.info("Received pet registration request")
+        logger.fine("Received pet registration request")
 
         return ReactiveSecurityContextHolder.getContext()
             .map { it.authentication.name }
@@ -168,6 +168,7 @@ class PetHandler(
 
     private fun handleError(throwable: Throwable): Mono<ServerResponse> {
         logger.warning("Error during pet registration: ${throwable.message}")
+        logger.fine("Error details: ${throwable.javaClass.name} - ${throwable.message}")
 
         return when (throwable) {
             is ValidationException -> buildErrorResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", throwable)

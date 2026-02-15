@@ -65,6 +65,7 @@ class RegisterPetUseCase(
         }
         .doOnError { error ->
             logger.warning("[$userId] Pet registration failed: ${error.message}")
+            logger.fine("[$userId] Error details: ${error.javaClass.name}")
         }
     }
 
