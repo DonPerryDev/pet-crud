@@ -1,10 +1,13 @@
 package com.donperry.storage.photo
 
 import com.donperry.model.pet.PresignedUploadUrl
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
+import org.mockito.MockedConstruction
+import org.mockito.Mockito.mockConstruction
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
@@ -12,6 +15,8 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import reactor.test.StepVerifier
+import software.amazon.awssdk.regions.Region
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse
@@ -34,14 +39,28 @@ class S3PhotoStorageAdapterTest {
     @Mock
     private lateinit var s3Presigner: S3Presigner
 
-    @Mock
     private lateinit var s3Properties: S3Properties
 
     private lateinit var adapter: S3PhotoStorageAdapter
 
+    private lateinit var regionProviderMock: MockedConstruction<DefaultAwsRegionProviderChain>
+
     @BeforeEach
     fun setUp() {
+        // Mock DefaultAwsRegionProviderChain to return a test region
+        regionProviderMock = mockConstruction(DefaultAwsRegionProviderChain::class.java) { mock, _ ->
+            whenever(mock.region).thenReturn(Region.US_EAST_1)
+        }
+
+        // Use real S3Properties instance instead of mock
+        s3Properties = S3Properties(bucketName = "test-bucket")
+
         adapter = S3PhotoStorageAdapter(s3AsyncClient, s3Presigner, s3Properties)
+    }
+
+    @AfterEach
+    fun tearDown() {
+        regionProviderMock.close()
     }
 
     // generatePresignedUrl tests
@@ -53,11 +72,6 @@ class S3PhotoStorageAdapterTest {
         val petId = "pet456"
         val contentType = "image/jpeg"
         val expirationMinutes = 15
-        val bucketName = "test-bucket"
-        val region = "us-east-1"
-
-        whenever(s3Properties.bucketName).thenReturn(bucketName)
-        whenever(s3Properties.region).thenReturn(region)
 
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
         val signedUrl = URL("https://test-bucket.s3.amazonaws.com/signed-url")
@@ -83,9 +97,6 @@ class S3PhotoStorageAdapterTest {
         val contentType = "image/jpeg"
         val expirationMinutes = 10
 
-        whenever(s3Properties.bucketName).thenReturn("bucket")
-        whenever(s3Properties.region).thenReturn("us-east-1")
-
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
         whenever(mockPresignedRequest.url()).thenReturn(URL("https://bucket.s3.amazonaws.com/signed"))
         whenever(s3Presigner.presignPutObject(any<PutObjectPresignRequest>())).thenReturn(mockPresignedRequest)
@@ -106,9 +117,6 @@ class S3PhotoStorageAdapterTest {
         val petId = "pet012"
         val contentType = "image/png"
         val expirationMinutes = 20
-
-        whenever(s3Properties.bucketName).thenReturn("bucket")
-        whenever(s3Properties.region).thenReturn("eu-west-1")
 
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
         whenever(mockPresignedRequest.url()).thenReturn(URL("https://bucket.s3.amazonaws.com/signed"))
@@ -131,9 +139,6 @@ class S3PhotoStorageAdapterTest {
         val contentType = "application/octet-stream"
         val expirationMinutes = 30
 
-        whenever(s3Properties.bucketName).thenReturn("bucket")
-        whenever(s3Properties.region).thenReturn("ap-south-1")
-
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
         whenever(mockPresignedRequest.url()).thenReturn(URL("https://bucket.s3.amazonaws.com/signed"))
         whenever(s3Presigner.presignPutObject(any<PutObjectPresignRequest>())).thenReturn(mockPresignedRequest)
@@ -155,9 +160,6 @@ class S3PhotoStorageAdapterTest {
         val contentType = "image/jpeg"
         val expirationMinutes = 15
 
-        whenever(s3Properties.bucketName).thenReturn("bucket")
-        whenever(s3Properties.region).thenReturn("us-west-2")
-
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
         whenever(mockPresignedRequest.url()).thenReturn(URL("https://bucket.s3.amazonaws.com/signed"))
         whenever(s3Presigner.presignPutObject(any<PutObjectPresignRequest>())).thenReturn(mockPresignedRequest)
@@ -178,9 +180,6 @@ class S3PhotoStorageAdapterTest {
         val petId = "pet456"
         val contentType = "image/png"
         val expirationMinutes = 25
-
-        whenever(s3Properties.bucketName).thenReturn("bucket")
-        whenever(s3Properties.region).thenReturn("us-east-1")
 
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
         whenever(mockPresignedRequest.url()).thenReturn(URL("https://bucket.s3.amazonaws.com/signed"))
@@ -207,9 +206,6 @@ class S3PhotoStorageAdapterTest {
         val contentType = "image/jpeg"
         val expirationMinutes = 15
 
-        whenever(s3Properties.bucketName).thenReturn("bucket")
-        whenever(s3Properties.region).thenReturn("us-east-1")
-
         val s3Exception = S3Exception.builder().message("Presigner error").build()
         whenever(s3Presigner.presignPutObject(any<PutObjectPresignRequest>())).thenThrow(s3Exception)
 
@@ -226,8 +222,6 @@ class S3PhotoStorageAdapterTest {
         // Arrange
         val photoKey = "pets/user123/pet456/photo.jpg"
 
-        whenever(s3Properties.bucketName).thenReturn("test-bucket")
-
         val mockResponse = HeadObjectResponse.builder().build()
         val completedFuture = CompletableFuture.completedFuture(mockResponse)
         whenever(s3AsyncClient.headObject(any<HeadObjectRequest>())).thenReturn(completedFuture)
@@ -242,8 +236,6 @@ class S3PhotoStorageAdapterTest {
     fun `should return false when photo does not exist in S3`() {
         // Arrange
         val photoKey = "pets/user123/pet456/nonexistent.jpg"
-
-        whenever(s3Properties.bucketName).thenReturn("test-bucket")
 
         val noSuchKeyException = NoSuchKeyException.builder().message("Key not found").build()
         val failedFuture = CompletableFuture<HeadObjectResponse>()
@@ -261,8 +253,6 @@ class S3PhotoStorageAdapterTest {
         // Arrange
         val photoKey = "pets/user123/pet456/photo.jpg"
 
-        whenever(s3Properties.bucketName).thenReturn("test-bucket")
-
         val s3Exception = S3Exception.builder().message("Access denied").build()
         val failedFuture = CompletableFuture<HeadObjectResponse>()
         failedFuture.completeExceptionally(s3Exception)
@@ -279,8 +269,6 @@ class S3PhotoStorageAdapterTest {
         // Arrange
         val photoKey = "pets/user123/pet456/photo.jpg"
 
-        whenever(s3Properties.bucketName).thenReturn("test-bucket")
-
         val runtimeException = RuntimeException("Network error")
         val failedFuture = CompletableFuture<HeadObjectResponse>()
         failedFuture.completeExceptionally(runtimeException)
@@ -295,71 +283,60 @@ class S3PhotoStorageAdapterTest {
     // buildPhotoUrl tests
 
     @Test
-    fun `should build correct photo URL with bucket and region`() {
+    fun `should build correct photo URL with bucket name and photo key`() {
         // Arrange
         val photoKey = "pets/user123/pet456/photo.jpg"
-        val bucketName = "my-pet-bucket"
-        val region = "us-east-1"
-
-        whenever(s3Properties.bucketName).thenReturn(bucketName)
-        whenever(s3Properties.region).thenReturn(region)
 
         // Act
         val result = adapter.buildPhotoUrl(photoKey)
 
         // Assert
-        val expectedUrl = "https://$bucketName.s3.$region.amazonaws.com/$photoKey"
-        assert(result == expectedUrl) { "Expected $expectedUrl but got $result" }
+        // Region is resolved from DefaultAwsRegionProviderChain (mocked to us-east-1)
+        assert(result.contains("test-bucket")) { "URL should contain bucket name: $result" }
+        assert(result.contains(photoKey)) { "URL should contain photo key: $result" }
+        assert(result.startsWith("https://")) { "URL should use HTTPS: $result" }
+        assert(result.contains(".s3.")) { "URL should contain S3 domain: $result" }
+        assert(result.contains(".amazonaws.com/")) { "URL should contain amazonaws.com: $result" }
     }
 
     @Test
-    fun `should build URL with different bucket name`() {
+    fun `should build URL with correct S3 format`() {
         // Arrange
         val photoKey = "pets/user789/pet012/image.png"
-        val bucketName = "production-bucket"
-        val region = "eu-west-1"
-
-        whenever(s3Properties.bucketName).thenReturn(bucketName)
-        whenever(s3Properties.region).thenReturn(region)
 
         // Act
         val result = adapter.buildPhotoUrl(photoKey)
 
         // Assert
-        assert(result == "https://$bucketName.s3.$region.amazonaws.com/$photoKey")
+        val urlPattern = Regex("https://test-bucket\\.s3\\.[a-z0-9-]+\\.amazonaws\\.com/pets/user789/pet012/image\\.png")
+        assert(result.matches(urlPattern)) { "URL $result does not match expected S3 URL format" }
     }
 
     @Test
-    fun `should build URL with different region`() {
+    fun `should build URL using region from DefaultAwsRegionProviderChain`() {
         // Arrange
         val photoKey = "pets/user999/pet888/test.jpg"
-        val bucketName = "test-bucket"
-        val region = "ap-south-1"
-
-        whenever(s3Properties.bucketName).thenReturn(bucketName)
-        whenever(s3Properties.region).thenReturn(region)
 
         // Act
         val result = adapter.buildPhotoUrl(photoKey)
 
         // Assert
-        assert(result == "https://$bucketName.s3.$region.amazonaws.com/$photoKey")
+        // The region should be us-east-1 from the mocked DefaultAwsRegionProviderChain
+        val expectedUrl = "https://test-bucket.s3.us-east-1.amazonaws.com/$photoKey"
+        assert(result == expectedUrl) { "Expected $expectedUrl but got $result" }
     }
 
     @Test
     fun `should build URL with complex photo key`() {
         // Arrange
         val photoKey = "pets/user-abc-123/pet-xyz-789/uuid-12345.jpg"
-        val bucketName = "complex-bucket"
-        val region = "ca-central-1"
-
-        whenever(s3Properties.bucketName).thenReturn(bucketName)
-        whenever(s3Properties.region).thenReturn(region)
 
         // Act
         val result = adapter.buildPhotoUrl(photoKey)
 
         // Assert
-        assert(result == "https://$bucketName.s3.$region.amazonaws.com/$photoKey")
+        assert(result == "https://test-bucket.s3.us-east-1.amazonaws.com/$photoKey") {
+            "URL format incorrect: $result"
+        }
     }
 }

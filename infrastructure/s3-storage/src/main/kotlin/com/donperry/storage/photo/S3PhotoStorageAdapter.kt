@@ -4,12 +4,12 @@ import com.donperry.model.pet.PresignedUploadUrl
 import com.donperry.model.pet.gateway.PhotoStorageGateway
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
+import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain
 import software.amazon.awssdk.services.s3.S3AsyncClient
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException
 import software.amazon.awssdk.services.s3.model.PutObjectRequest
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest
 import java.time.Duration
 import java.time.Instant
@@ -27,6 +27,8 @@ class S3PhotoStorageAdapter(
     companion object {
         private val logger: Logger = Logger.getLogger(S3PhotoStorageAdapter::class.java.name)
     }
+
+    private val region: String = DefaultAwsRegionProviderChain().region.id()
 
     override fun generatePresignedUrl(userId: String, petId: String, contentType: String, expirationMinutes: Int): Mono<PresignedUploadUrl> {
         val fileExtension = when (contentType) {
@@ -91,6 +93,6 @@ class S3PhotoStorageAdapter(
     }
 
     override fun buildPhotoUrl(photoKey: String): String {
-        return "https://${s3Properties.bucketName}.s3.${s3Properties.region}.amazonaws.com/$photoKey"
+        return "https://${s3Properties.bucketName}.s3.$region.amazonaws.com/$photoKey"
     }
 }
