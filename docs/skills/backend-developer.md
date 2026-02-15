@@ -26,6 +26,7 @@ Implements production Kotlin/Spring WebFlux code following Clean Architecture pa
 - [ ] No `.block()` anywhere
 - [ ] No `try-catch` in reactive chains
 - [ ] No Spring annotations in `domain/model` or `domain/usecase`
+- [ ] Functions have at most 5 arguments (use DTOs for more)
 - [ ] Build passes: `./gradlew clean build`
 
 ## Validation Patterns
@@ -57,6 +58,38 @@ private fun validatePhoto(photoSize: Long?) {
 
 > **Never** use chained `if (...) throw` blocks. Use `listOfNotNull` + `takeIf` for multi-field validation, `when` for single-condition guards.
 
+## Function Argument Limits
+
+If a function has **more than 5 arguments**, create a **data class DTO** to group them.
+
+**Bad** — too many arguments:
+```kotlin
+fun execute(
+    userId: String, name: String, species: Species, breed: String?,
+    age: Int, birthdate: LocalDate?, weight: BigDecimal?, nickname: String?,
+    photoFileName: String?, photoContentType: String?, photoBytes: ByteArray?, photoSize: Long?
+): Mono<Pet>
+```
+
+**Good** — grouped into DTOs:
+```kotlin
+data class RegisterPetCommand(
+    val userId: String,
+    val name: String,
+    val species: Species,
+    val breed: String?,
+    val age: Int,
+    val birthdate: LocalDate?,
+    val weight: BigDecimal?,
+    val nickname: String?,
+    val photo: PhotoUploadData?
+)
+
+fun execute(command: RegisterPetCommand): Mono<Pet>
+```
+
+> **Placement:** Domain-level DTOs go in `domain/model/src/main/kotlin/.../model/{entity}/`. Infrastructure DTOs (REST requests/responses) stay in their respective `dto/` packages.
+
 ## Common Issues
 
 | Issue | Fix |
@@ -66,3 +99,4 @@ private fun validatePhoto(photoSize: Long?) {
 | Router not registered | Ensure class has `@Configuration` and method has `@Bean` |
 | R2DBC mapping fails | Verify `@Table` name matches database table, `@Id` on primary key |
 | WebClient fails | Check `WebClient.Builder` bean exists, verify base URL |
+| Function has >5 arguments | Create a `data class` DTO to group parameters |

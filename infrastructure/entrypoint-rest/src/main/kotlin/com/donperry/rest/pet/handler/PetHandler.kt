@@ -5,6 +5,8 @@ import com.donperry.model.exception.PhotoSizeExceededException
 import com.donperry.model.exception.PhotoUploadException
 import com.donperry.model.exception.UnauthorizedException
 import com.donperry.model.exception.ValidationException
+import com.donperry.model.pet.PhotoUploadData
+import com.donperry.model.pet.RegisterPetCommand
 import com.donperry.model.pet.Species
 import com.donperry.rest.common.dto.ErrorResponse
 import com.donperry.rest.pet.dto.PetResponse
@@ -53,7 +55,7 @@ class PetHandler(
                             )
                         }
 
-                        parseRequestAndRegisterPet(userId, petPart, photoPart)
+                        parseAndRegister(userId, petPart, photoPart)
                     }
             }
             .onErrorResume { throwable ->
@@ -61,7 +63,7 @@ class PetHandler(
             }
     }
 
-    private fun parseRequestAndRegisterPet(
+    private fun parseAndRegister(
         userId: String,
         petPart: Part,
         photoPart: FilePart?
@@ -84,14 +86,26 @@ class PetHandler(
                 }
 
                 if (photoPart != null) {
-                    processWithPhoto(userId, petRequest, species, photoPart)
+                    buildCommandWithPhoto(userId, petRequest, species, photoPart)
                 } else {
-                    processWithoutPhoto(userId, petRequest, species)
+                    val command = RegisterPetCommand(
+                        userId = userId,
+                        name = petRequest.name,
+                        species = species,
+                        breed = petRequest.breed,
+                        age = petRequest.age,
+                        birthdate = petRequest.birthdate,
+                        weight = petRequest.weight,
+                        nickname = petRequest.nickname,
+                        photo = null
+                    )
+                    registerPetUseCase.execute(command)
+                        .flatMap { pet -> buildCreatedResponse(pet) }
                 }
             }
     }
 
-    private fun processWithPhoto(
+    private fun buildCommandWithPhoto(
         userId: String,
         petRequest: RegisterPetRequest,
         species: Species,
@@ -107,7 +121,7 @@ class PetHandler(
                 val photoSize = photoBytes.size.toLong()
                 logger.fine("[$userId] Photo upload: ${photoPart.filename()}, size: $photoSize bytes")
 
-                registerPetUseCase.execute(
+                val command = RegisterPetCommand(
                     userId = userId,
                     name = petRequest.name,
                     species = species,
@@ -116,35 +130,17 @@ class PetHandler(
                     birthdate = petRequest.birthdate,
                     weight = petRequest.weight,
                     nickname = petRequest.nickname,
-                    photoFileName = photoPart.filename(),
-                    photoContentType = photoPart.headers().contentType?.toString(),
-                    photoBytes = photoBytes,
-                    photoSize = photoSize
+                    photo = PhotoUploadData(
+                        fileName = photoPart.filename(),
+                        contentType = photoPart.headers().contentType?.toString() ?: "application/octet-stream",
+                        fileSize = photoSize,
+                        fileBytes = photoBytes
+                    )
                 )
-                .flatMap { pet -> buildCreatedResponse(pet) }
-            }
-    }
 
-    private fun processWithoutPhoto(
-        userId: String,
-        petRequest: RegisterPetRequest,
-        species: Species
-    ): Mono<ServerResponse> {
-        return registerPetUseCase.execute(
-            userId = userId,
-            name = petRequest.name,
-            species = species,
-            breed = petRequest.breed,
-            age = petRequest.age,
-            birthdate = petRequest.birthdate,
-            weight = petRequest.weight,
-            nickname = petRequest.nickname,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
-        )
-        .flatMap { pet -> buildCreatedResponse(pet) }
+                registerPetUseCase.execute(command)
+                    .flatMap { pet -> buildCreatedResponse(pet) }
+            }
     }
 
     private fun buildCreatedResponse(pet: com.donperry.model.pet.Pet): Mono<ServerResponse> {

@@ -1,6 +1,7 @@
 package com.donperry.storage.photo
 
 import com.donperry.model.exception.PhotoUploadException
+import com.donperry.model.pet.PhotoUploadData
 import com.donperry.model.pet.gateway.PhotoStorageGateway
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
@@ -19,27 +20,20 @@ class S3PhotoStorageAdapter(
         private val logger: Logger = Logger.getLogger(S3PhotoStorageAdapter::class.java.name)
     }
 
-    override fun uploadPhoto(
-        userId: String,
-        petId: String,
-        fileName: String,
-        contentType: String,
-        fileSize: Long,
-        fileBytes: ByteArray
-    ): Mono<String> {
-        val key = "pets/$userId/$petId/$fileName"
+    override fun uploadPhoto(userId: String, petId: String, photo: PhotoUploadData): Mono<String> {
+        val key = "pets/$userId/$petId/${photo.fileName}"
 
         logger.info("[$petId] Uploading photo to S3: bucket=${s3Properties.bucketName}, key=$key")
 
         val putObjectRequest = PutObjectRequest.builder()
             .bucket(s3Properties.bucketName)
             .key(key)
-            .contentType(contentType)
-            .contentLength(fileSize)
+            .contentType(photo.contentType)
+            .contentLength(photo.fileSize)
             .build()
 
         return Mono.fromFuture(
-            s3AsyncClient.putObject(putObjectRequest, AsyncRequestBody.fromBytes(fileBytes))
+            s3AsyncClient.putObject(putObjectRequest, AsyncRequestBody.fromBytes(photo.fileBytes))
         )
         .map {
             val url = "https://${s3Properties.bucketName}.s3.${s3Properties.region}.amazonaws.com/$key"

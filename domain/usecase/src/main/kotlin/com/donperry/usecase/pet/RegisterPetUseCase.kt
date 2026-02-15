@@ -4,7 +4,8 @@ import com.donperry.model.exception.PetLimitExceededException
 import com.donperry.model.exception.PhotoSizeExceededException
 import com.donperry.model.exception.ValidationException
 import com.donperry.model.pet.Pet
-import com.donperry.model.pet.Species
+import com.donperry.model.pet.PhotoUploadData
+import com.donperry.model.pet.RegisterPetCommand
 import com.donperry.model.pet.gateway.PetPersistenceGateway
 import com.donperry.model.pet.gateway.PhotoStorageGateway
 import reactor.core.publisher.Mono
@@ -22,50 +23,37 @@ class RegisterPetUseCase(
         private const val MAX_PHOTO_SIZE_BYTES = 5L * 1024 * 1024
     }
 
-    fun execute(
-        userId: String,
-        name: String,
-        species: Species,
-        breed: String?,
-        age: Int,
-        birthdate: LocalDate?,
-        weight: BigDecimal?,
-        nickname: String?,
-        photoFileName: String?,
-        photoContentType: String?,
-        photoBytes: ByteArray?,
-        photoSize: Long?
-    ): Mono<Pet> {
-        logger.info("[$userId] Starting pet registration process for pet: $name")
+    fun execute(command: RegisterPetCommand): Mono<Pet> {
+        logger.info("[${command.userId}] Starting pet registration process for pet: ${command.name}")
 
         return Mono.fromCallable {
-            validateInputs(userId, name, age, birthdate, weight)
-            validatePhoto(photoSize)
+            validateInputs(command.userId, command.name, command.age, command.birthdate, command.weight)
+            validatePhoto(command.photo?.fileSize)
         }
-        .then(checkPetLimit(userId))
+        .then(Mono.defer { checkPetLimit(command.userId) })
         .then(Mono.defer {
             val pet = Pet(
-                name = name,
-                species = species,
-                breed = breed,
-                age = age,
-                birthdate = birthdate,
-                weight = weight,
-                nickname = nickname,
-                owner = userId,
+                name = command.name,
+                species = command.species,
+                breed = command.breed,
+                age = command.age,
+                birthdate = command.birthdate,
+                weight = command.weight,
+                nickname = command.nickname,
+                owner = command.userId,
                 registrationDate = LocalDate.now()
             )
             petPersistenceGateway.save(pet)
         })
         .flatMap { savedPet ->
-            uploadPhotoIfPresent(savedPet, userId, photoFileName, photoContentType, photoBytes, photoSize)
+            uploadPhotoIfPresent(savedPet, command.userId, command.photo)
         }
         .doOnNext { pet ->
             logger.info("[${pet.id}] Pet registration completed successfully")
         }
         .doOnError { error ->
-            logger.warning("[$userId] Pet registration failed: ${error.message}")
-            logger.fine("[$userId] Error details: ${error.javaClass.name}")
+            logger.warning("[${command.userId}] Pet registration failed: ${error.message}")
+            logger.fine("[${command.userId}] Error details: ${error.javaClass.name}")
         }
     }
 
@@ -102,30 +90,16 @@ class RegisterPetUseCase(
             }
     }
 
-    private fun uploadPhotoIfPresent(
-        pet: Pet,
-        userId: String,
-        photoFileName: String?,
-        photoContentType: String?,
-        photoBytes: ByteArray?,
-        photoSize: Long?
-    ): Mono<Pet> {
-        if (photoFileName == null || photoContentType == null || photoBytes == null || photoSize == null) {
+    private fun uploadPhotoIfPresent(pet: Pet, userId: String, photo: PhotoUploadData?): Mono<Pet> {
+        if (photo == null) {
             return Mono.just(pet)
         }
 
-        logger.info("[${pet.id}] Uploading photo: $photoFileName")
-        return photoStorageGateway.uploadPhoto(
-            userId = userId,
-            petId = pet.id!!,
-            fileName = photoFileName,
-            contentType = photoContentType,
-            fileSize = photoSize,
-            fileBytes = photoBytes
-        )
-        .flatMap { photoUrl ->
-            logger.info("[${pet.id}] Photo uploaded successfully")
-            petPersistenceGateway.save(pet.copy(photoUrl = photoUrl))
-        }
+        logger.info("[${pet.id}] Uploading photo: ${photo.fileName}")
+        return photoStorageGateway.uploadPhoto(userId, pet.id!!, photo)
+            .flatMap { photoUrl ->
+                logger.info("[${pet.id}] Photo uploaded successfully")
+                petPersistenceGateway.save(pet.copy(photoUrl = photoUrl))
+            }
     }
 }

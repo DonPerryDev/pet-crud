@@ -5,6 +5,8 @@ import com.donperry.model.exception.PhotoSizeExceededException
 import com.donperry.model.exception.PhotoUploadException
 import com.donperry.model.exception.ValidationException
 import com.donperry.model.pet.Pet
+import com.donperry.model.pet.PhotoUploadData
+import com.donperry.model.pet.RegisterPetCommand
 import com.donperry.model.pet.Species
 import com.donperry.model.pet.gateway.PetPersistenceGateway
 import com.donperry.model.pet.gateway.PhotoStorageGateway
@@ -16,6 +18,7 @@ import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
@@ -45,103 +48,76 @@ class RegisterPetUseCaseTest {
     // Happy path tests
     @Test
     fun `should register pet without photo when all required fields valid`() {
-        // Given
         val userId = "user-123"
-        val name = "Buddy"
-        val species = Species.DOG
-        val breed = "Golden Retriever"
-        val age = 3
-
         val savedPet = Pet(
             id = "pet-123",
-            name = name,
-            species = species,
-            breed = breed,
-            age = age,
-            birthdate = null,
-            weight = null,
-            nickname = null,
+            name = "Buddy",
+            species = Species.DOG,
+            breed = "Golden Retriever",
+            age = 3,
             owner = userId,
-            registrationDate = LocalDate.now(),
-            photoUrl = null
+            registrationDate = LocalDate.now()
         )
 
         `when`(petPersistenceGateway.countByOwner(userId)).thenReturn(Mono.just(0L))
         `when`(petPersistenceGateway.save(any())).thenReturn(Mono.just(savedPet))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
-            name = name,
-            species = species,
-            breed = breed,
-            age = age,
+            name = "Buddy",
+            species = Species.DOG,
+            breed = "Golden Retriever",
+            age = 3,
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectNext(savedPet)
             .verifyComplete()
 
         verify(petPersistenceGateway).countByOwner(userId)
         verify(petPersistenceGateway).save(any())
-        verify(photoStorageGateway, never()).uploadPhoto(any(), any(), any(), any(), any(), any())
+        verify(photoStorageGateway, never()).uploadPhoto(any(), any(), any())
     }
 
     @Test
     fun `should register pet with all optional fields populated`() {
-        // Given
         val userId = "user-123"
-        val name = "Buddy"
-        val species = Species.DOG
-        val breed = "Golden Retriever"
-        val age = 3
         val birthdate = LocalDate.of(2020, 5, 15)
         val weight = BigDecimal("30.0")
-        val nickname = "Bud"
 
         val savedPet = Pet(
             id = "pet-123",
-            name = name,
-            species = species,
-            breed = breed,
-            age = age,
+            name = "Buddy",
+            species = Species.DOG,
+            breed = "Golden Retriever",
+            age = 3,
             birthdate = birthdate,
             weight = weight,
-            nickname = nickname,
+            nickname = "Bud",
             owner = userId,
-            registrationDate = LocalDate.now(),
-            photoUrl = null
+            registrationDate = LocalDate.now()
         )
 
         `when`(petPersistenceGateway.countByOwner(userId)).thenReturn(Mono.just(0L))
         `when`(petPersistenceGateway.save(any())).thenReturn(Mono.just(savedPet))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
-            name = name,
-            species = species,
-            breed = breed,
-            age = age,
+            name = "Buddy",
+            species = Species.DOG,
+            breed = "Golden Retriever",
+            age = 3,
             birthdate = birthdate,
             weight = weight,
-            nickname = nickname,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            nickname = "Bud",
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectNext(savedPet)
             .verifyComplete()
 
@@ -149,13 +125,13 @@ class RegisterPetUseCaseTest {
         verify(petPersistenceGateway).save(petCaptor.capture())
 
         val capturedPet = petCaptor.firstValue
-        assertEquals(name, capturedPet.name)
-        assertEquals(species, capturedPet.species)
-        assertEquals(breed, capturedPet.breed)
-        assertEquals(age, capturedPet.age)
+        assertEquals("Buddy", capturedPet.name)
+        assertEquals(Species.DOG, capturedPet.species)
+        assertEquals("Golden Retriever", capturedPet.breed)
+        assertEquals(3, capturedPet.age)
         assertEquals(birthdate, capturedPet.birthdate)
         assertEquals(weight, capturedPet.weight)
-        assertEquals(nickname, capturedPet.nickname)
+        assertEquals("Bud", capturedPet.nickname)
         assertEquals(userId, capturedPet.owner)
         assertNull(capturedPet.id)
         assertEquals(LocalDate.now(), capturedPet.registrationDate)
@@ -163,32 +139,25 @@ class RegisterPetUseCaseTest {
 
     @Test
     fun `should register pet with photo and update photoUrl`() {
-        // Given
         val userId = "user-123"
-        val name = "Buddy"
-        val species = Species.DOG
-        val breed = "Golden Retriever"
-        val age = 3
-        val photoFileName = "buddy.jpg"
-        val photoContentType = "image/jpeg"
         val photoBytes = ByteArray(1024) { it.toByte() }
-        val photoSize = photoBytes.size.toLong()
+        val photo = PhotoUploadData(
+            fileName = "buddy.jpg",
+            contentType = "image/jpeg",
+            fileSize = photoBytes.size.toLong(),
+            fileBytes = photoBytes
+        )
         val photoUrl = "https://s3.amazonaws.com/pets/user-123/pet-123/buddy.jpg"
 
         val savedPetWithoutPhoto = Pet(
             id = "pet-123",
-            name = name,
-            species = species,
-            breed = breed,
-            age = age,
-            birthdate = null,
-            weight = null,
-            nickname = null,
+            name = "Buddy",
+            species = Species.DOG,
+            breed = "Golden Retriever",
+            age = 3,
             owner = userId,
-            registrationDate = LocalDate.now(),
-            photoUrl = null
+            registrationDate = LocalDate.now()
         )
-
         val savedPetWithPhoto = savedPetWithoutPhoto.copy(photoUrl = photoUrl)
 
         `when`(petPersistenceGateway.countByOwner(userId)).thenReturn(Mono.just(0L))
@@ -196,78 +165,59 @@ class RegisterPetUseCaseTest {
             Mono.just(savedPetWithoutPhoto),
             Mono.just(savedPetWithPhoto)
         )
-        `when`(photoStorageGateway.uploadPhoto(userId, "pet-123", photoFileName, photoContentType, photoSize, photoBytes))
+        `when`(photoStorageGateway.uploadPhoto(eq(userId), eq("pet-123"), any()))
             .thenReturn(Mono.just(photoUrl))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
-            name = name,
-            species = species,
-            breed = breed,
-            age = age,
+            name = "Buddy",
+            species = Species.DOG,
+            breed = "Golden Retriever",
+            age = 3,
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = photoFileName,
-            photoContentType = photoContentType,
-            photoBytes = photoBytes,
-            photoSize = photoSize
+            photo = photo
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectNext(savedPetWithPhoto)
             .verifyComplete()
 
         verify(petPersistenceGateway, times(2)).save(any())
-        verify(photoStorageGateway).uploadPhoto(userId, "pet-123", photoFileName, photoContentType, photoSize, photoBytes)
+        verify(photoStorageGateway).uploadPhoto(eq(userId), eq("pet-123"), any())
     }
 
     @Test
     fun `should handle null optional fields correctly`() {
-        // Given
         val userId = "user-456"
-        val name = "Mittens"
-        val species = Species.CAT
-        val breed: String? = null
-        val age = 2
 
         val savedPet = Pet(
             id = "pet-456",
-            name = name,
-            species = species,
-            breed = breed,
-            age = age,
-            birthdate = null,
-            weight = null,
-            nickname = null,
+            name = "Mittens",
+            species = Species.CAT,
+            breed = null,
+            age = 2,
             owner = userId,
-            registrationDate = LocalDate.now(),
-            photoUrl = null
+            registrationDate = LocalDate.now()
         )
 
         `when`(petPersistenceGateway.countByOwner(userId)).thenReturn(Mono.just(1L))
         `when`(petPersistenceGateway.save(any())).thenReturn(Mono.just(savedPet))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
-            name = name,
-            species = species,
-            breed = breed,
-            age = age,
+            name = "Mittens",
+            species = Species.CAT,
+            breed = null,
+            age = 2,
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectNext(savedPet)
             .verifyComplete()
 
@@ -283,48 +233,34 @@ class RegisterPetUseCaseTest {
 
     @Test
     fun `should accept zero age as valid`() {
-        // Given
         val userId = "user-000"
-        val name = "Puppy"
-        val species = Species.DOG
-        val breed = "Mixed"
-        val age = 0
 
         val savedPet = Pet(
             id = "pet-000",
-            name = name,
-            species = species,
-            breed = breed,
-            age = age,
-            birthdate = null,
-            weight = null,
-            nickname = null,
+            name = "Puppy",
+            species = Species.DOG,
+            breed = "Mixed",
+            age = 0,
             owner = userId,
-            registrationDate = LocalDate.now(),
-            photoUrl = null
+            registrationDate = LocalDate.now()
         )
 
         `when`(petPersistenceGateway.countByOwner(userId)).thenReturn(Mono.just(0L))
         `when`(petPersistenceGateway.save(any())).thenReturn(Mono.just(savedPet))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
-            name = name,
-            species = species,
-            breed = breed,
-            age = age,
+            name = "Puppy",
+            species = Species.DOG,
+            breed = "Mixed",
+            age = 0,
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectNext(savedPet)
             .verifyComplete()
 
@@ -336,10 +272,7 @@ class RegisterPetUseCaseTest {
     // Validation error tests
     @Test
     fun `should throw ValidationException when userId is blank`() {
-        // Given
-        `when`(petPersistenceGateway.countByOwner(any())).thenReturn(Mono.just(0L))
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = "",
             name = "Buddy",
             species = Species.DOG,
@@ -348,14 +281,10 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is ValidationException && throwable.message == "User ID cannot be blank"
             }
@@ -366,10 +295,7 @@ class RegisterPetUseCaseTest {
 
     @Test
     fun `should throw ValidationException when name is blank`() {
-        // Given
-        `when`(petPersistenceGateway.countByOwner(any())).thenReturn(Mono.just(0L))
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = "user-123",
             name = "",
             species = Species.DOG,
@@ -378,14 +304,10 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is ValidationException && throwable.message == "Pet name cannot be blank"
             }
@@ -396,10 +318,7 @@ class RegisterPetUseCaseTest {
 
     @Test
     fun `should throw ValidationException when age is negative`() {
-        // Given
-        `when`(petPersistenceGateway.countByOwner(any())).thenReturn(Mono.just(0L))
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = "user-123",
             name = "Buddy",
             species = Species.DOG,
@@ -408,14 +327,10 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is ValidationException && throwable.message == "Pet age must be zero or greater"
             }
@@ -426,13 +341,9 @@ class RegisterPetUseCaseTest {
 
     @Test
     fun `should throw ValidationException when birthdate is in future`() {
-        // Given
         val futureBirthdate = LocalDate.now().plusDays(1)
 
-        // Given
-        `when`(petPersistenceGateway.countByOwner(any())).thenReturn(Mono.just(0L))
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = "user-123",
             name = "Buddy",
             species = Species.DOG,
@@ -441,14 +352,10 @@ class RegisterPetUseCaseTest {
             birthdate = futureBirthdate,
             weight = null,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is ValidationException && throwable.message == "Pet birthdate cannot be in the future"
             }
@@ -459,10 +366,7 @@ class RegisterPetUseCaseTest {
 
     @Test
     fun `should throw ValidationException when weight is zero`() {
-        // Given
-        `when`(petPersistenceGateway.countByOwner(any())).thenReturn(Mono.just(0L))
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = "user-123",
             name = "Buddy",
             species = Species.DOG,
@@ -471,14 +375,10 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = BigDecimal.ZERO,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is ValidationException && throwable.message == "Pet weight must be greater than zero"
             }
@@ -489,10 +389,7 @@ class RegisterPetUseCaseTest {
 
     @Test
     fun `should throw ValidationException when weight is negative`() {
-        // Given
-        `when`(petPersistenceGateway.countByOwner(any())).thenReturn(Mono.just(0L))
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = "user-123",
             name = "Buddy",
             species = Species.DOG,
@@ -501,14 +398,10 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = BigDecimal("-5.0"),
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is ValidationException && throwable.message == "Pet weight must be greater than zero"
             }
@@ -520,13 +413,11 @@ class RegisterPetUseCaseTest {
     // Pet limit tests
     @Test
     fun `should throw PetLimitExceededException when user has 10 pets`() {
-        // Given
         val userId = "user-123"
 
         `when`(petPersistenceGateway.countByOwner(userId)).thenReturn(Mono.just(10L))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
             name = "Buddy",
             species = Species.DOG,
@@ -535,14 +426,10 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is PetLimitExceededException &&
                 throwable.message == "User $userId has reached the maximum limit of 10 pets"
@@ -555,7 +442,6 @@ class RegisterPetUseCaseTest {
 
     @Test
     fun `should allow registration when user has 9 pets`() {
-        // Given
         val userId = "user-123"
         val savedPet = Pet(
             id = "pet-123",
@@ -563,19 +449,14 @@ class RegisterPetUseCaseTest {
             species = Species.DOG,
             breed = "Golden Retriever",
             age = 3,
-            birthdate = null,
-            weight = null,
-            nickname = null,
             owner = userId,
-            registrationDate = LocalDate.now(),
-            photoUrl = null
+            registrationDate = LocalDate.now()
         )
 
         `when`(petPersistenceGateway.countByOwner(userId)).thenReturn(Mono.just(9L))
         `when`(petPersistenceGateway.save(any())).thenReturn(Mono.just(savedPet))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
             name = "Buddy",
             species = Species.DOG,
@@ -584,14 +465,10 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectNext(savedPet)
             .verifyComplete()
 
@@ -602,12 +479,9 @@ class RegisterPetUseCaseTest {
     // Photo validation tests
     @Test
     fun `should throw PhotoSizeExceededException when photo exceeds 5MB`() {
-        // Given
-        val photoSize = 6L * 1024 * 1024 // 6MB
-        `when`(petPersistenceGateway.countByOwner(any())).thenReturn(Mono.just(0L))
+        val photoSize = 6L * 1024 * 1024
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = "user-123",
             name = "Buddy",
             species = Species.DOG,
@@ -616,14 +490,15 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = "buddy.jpg",
-            photoContentType = "image/jpeg",
-            photoBytes = ByteArray(1024),
-            photoSize = photoSize
+            photo = PhotoUploadData(
+                fileName = "buddy.jpg",
+                contentType = "image/jpeg",
+                fileSize = photoSize,
+                fileBytes = ByteArray(1024)
+            )
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is PhotoSizeExceededException &&
                 throwable.message!!.contains("exceeds maximum allowed size")
@@ -635,13 +510,16 @@ class RegisterPetUseCaseTest {
 
     @Test
     fun `should accept photo of exactly 5MB`() {
-        // Given
         val userId = "user-123"
-        val photoSize = 5L * 1024 * 1024 // Exactly 5MB
-        val photoFileName = "buddy.jpg"
-        val photoContentType = "image/jpeg"
+        val photoSize = 5L * 1024 * 1024
         val photoBytes = ByteArray(1024)
         val photoUrl = "https://s3.amazonaws.com/pets/user-123/pet-123/buddy.jpg"
+        val photo = PhotoUploadData(
+            fileName = "buddy.jpg",
+            contentType = "image/jpeg",
+            fileSize = photoSize,
+            fileBytes = photoBytes
+        )
 
         val savedPetWithoutPhoto = Pet(
             id = "pet-123",
@@ -649,14 +527,9 @@ class RegisterPetUseCaseTest {
             species = Species.DOG,
             breed = "Golden Retriever",
             age = 3,
-            birthdate = null,
-            weight = null,
-            nickname = null,
             owner = userId,
-            registrationDate = LocalDate.now(),
-            photoUrl = null
+            registrationDate = LocalDate.now()
         )
-
         val savedPetWithPhoto = savedPetWithoutPhoto.copy(photoUrl = photoUrl)
 
         `when`(petPersistenceGateway.countByOwner(userId)).thenReturn(Mono.just(0L))
@@ -664,11 +537,10 @@ class RegisterPetUseCaseTest {
             Mono.just(savedPetWithoutPhoto),
             Mono.just(savedPetWithPhoto)
         )
-        `when`(photoStorageGateway.uploadPhoto(userId, "pet-123", photoFileName, photoContentType, photoSize, photoBytes))
+        `when`(photoStorageGateway.uploadPhoto(eq(userId), eq("pet-123"), any()))
             .thenReturn(Mono.just(photoUrl))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
             name = "Buddy",
             species = Species.DOG,
@@ -677,29 +549,27 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = photoFileName,
-            photoContentType = photoContentType,
-            photoBytes = photoBytes,
-            photoSize = photoSize
+            photo = photo
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectNext(savedPetWithPhoto)
             .verifyComplete()
 
-        verify(photoStorageGateway).uploadPhoto(any(), any(), any(), any(), any(), any())
+        verify(photoStorageGateway).uploadPhoto(any(), any(), any())
     }
 
     // Photo upload error tests
     @Test
     fun `should propagate PhotoUploadException when photo upload fails`() {
-        // Given
         val userId = "user-123"
-        val photoFileName = "buddy.jpg"
-        val photoContentType = "image/jpeg"
         val photoBytes = ByteArray(1024)
-        val photoSize = photoBytes.size.toLong()
+        val photo = PhotoUploadData(
+            fileName = "buddy.jpg",
+            contentType = "image/jpeg",
+            fileSize = photoBytes.size.toLong(),
+            fileBytes = photoBytes
+        )
 
         val savedPetWithoutPhoto = Pet(
             id = "pet-123",
@@ -707,23 +577,18 @@ class RegisterPetUseCaseTest {
             species = Species.DOG,
             breed = "Golden Retriever",
             age = 3,
-            birthdate = null,
-            weight = null,
-            nickname = null,
             owner = userId,
-            registrationDate = LocalDate.now(),
-            photoUrl = null
+            registrationDate = LocalDate.now()
         )
 
         val uploadError = PhotoUploadException("S3 upload failed", RuntimeException("Connection timeout"))
 
         `when`(petPersistenceGateway.countByOwner(userId)).thenReturn(Mono.just(0L))
         `when`(petPersistenceGateway.save(any())).thenReturn(Mono.just(savedPetWithoutPhoto))
-        `when`(photoStorageGateway.uploadPhoto(any(), any(), any(), any(), any(), any()))
+        `when`(photoStorageGateway.uploadPhoto(any(), any(), any()))
             .thenReturn(Mono.error(uploadError))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
             name = "Buddy",
             species = Species.DOG,
@@ -732,33 +597,27 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = photoFileName,
-            photoContentType = photoContentType,
-            photoBytes = photoBytes,
-            photoSize = photoSize
+            photo = photo
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is PhotoUploadException && throwable.message == "S3 upload failed"
             }
             .verify()
 
-        verify(photoStorageGateway).uploadPhoto(userId, "pet-123", photoFileName, photoContentType, photoSize, photoBytes)
+        verify(photoStorageGateway).uploadPhoto(eq(userId), eq("pet-123"), any())
     }
 
     // Persistence error tests
     @Test
     fun `should propagate error when countByOwner fails`() {
-        // Given
         val userId = "user-123"
         val countError = RuntimeException("Database connection failed")
 
         `when`(petPersistenceGateway.countByOwner(userId)).thenReturn(Mono.error(countError))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
             name = "Buddy",
             species = Species.DOG,
@@ -767,14 +626,10 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is RuntimeException && throwable.message == "Database connection failed"
             }
@@ -786,15 +641,13 @@ class RegisterPetUseCaseTest {
 
     @Test
     fun `should propagate error when initial save fails`() {
-        // Given
         val userId = "user-123"
         val saveError = RuntimeException("Database constraint violation")
 
         `when`(petPersistenceGateway.countByOwner(userId)).thenReturn(Mono.just(0L))
         `when`(petPersistenceGateway.save(any())).thenReturn(Mono.error(saveError))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
             name = "Buddy",
             species = Species.DOG,
@@ -803,14 +656,10 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = null,
-            photoContentType = null,
-            photoBytes = null,
-            photoSize = null
+            photo = null
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is RuntimeException && throwable.message == "Database constraint violation"
             }
@@ -821,12 +670,14 @@ class RegisterPetUseCaseTest {
 
     @Test
     fun `should propagate error when second save after photo upload fails`() {
-        // Given
         val userId = "user-123"
-        val photoFileName = "buddy.jpg"
-        val photoContentType = "image/jpeg"
         val photoBytes = ByteArray(1024)
-        val photoSize = photoBytes.size.toLong()
+        val photo = PhotoUploadData(
+            fileName = "buddy.jpg",
+            contentType = "image/jpeg",
+            fileSize = photoBytes.size.toLong(),
+            fileBytes = photoBytes
+        )
         val photoUrl = "https://s3.amazonaws.com/pets/user-123/pet-123/buddy.jpg"
 
         val savedPetWithoutPhoto = Pet(
@@ -835,12 +686,8 @@ class RegisterPetUseCaseTest {
             species = Species.DOG,
             breed = "Golden Retriever",
             age = 3,
-            birthdate = null,
-            weight = null,
-            nickname = null,
             owner = userId,
-            registrationDate = LocalDate.now(),
-            photoUrl = null
+            registrationDate = LocalDate.now()
         )
 
         val saveError = RuntimeException("Database constraint violation on second save")
@@ -850,11 +697,10 @@ class RegisterPetUseCaseTest {
             Mono.just(savedPetWithoutPhoto),
             Mono.error(saveError)
         )
-        `when`(photoStorageGateway.uploadPhoto(any(), any(), any(), any(), any(), any()))
+        `when`(photoStorageGateway.uploadPhoto(any(), any(), any()))
             .thenReturn(Mono.just(photoUrl))
 
-        // When
-        val result = registerPetUseCase.execute(
+        val command = RegisterPetCommand(
             userId = userId,
             name = "Buddy",
             species = Species.DOG,
@@ -863,20 +709,16 @@ class RegisterPetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoFileName = photoFileName,
-            photoContentType = photoContentType,
-            photoBytes = photoBytes,
-            photoSize = photoSize
+            photo = photo
         )
 
-        // Then
-        StepVerifier.create(result)
+        StepVerifier.create(registerPetUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is RuntimeException && throwable.message == "Database constraint violation on second save"
             }
             .verify()
 
         verify(petPersistenceGateway, times(2)).save(any())
-        verify(photoStorageGateway).uploadPhoto(any(), any(), any(), any(), any(), any())
+        verify(photoStorageGateway).uploadPhoto(any(), any(), any())
     }
 }

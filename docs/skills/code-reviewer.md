@@ -65,6 +65,29 @@ when {
 }
 ```
 
+## Function Argument Limits
+
+Flag functions with **more than 5 arguments** as a code smell. Require grouping into a `data class` DTO.
+
+| Scenario | Pattern | Example |
+|----------|---------|---------|
+| Use case entry point | Command DTO | `execute(command: RegisterPetCommand)` instead of 12 separate params |
+| Gateway with file data | Data DTO | `uploadPhoto(userId, petId, photo: PhotoUploadData)` instead of 6 params |
+
+**Bad** (flag as MEDIUM severity):
+```kotlin
+fun uploadPhoto(userId: String, petId: String, fileName: String,
+    contentType: String, fileSize: Long, fileBytes: ByteArray): Mono<String>
+```
+
+**Good** — grouped:
+```kotlin
+data class PhotoUploadData(val fileName: String, val contentType: String,
+    val fileSize: Long, val fileBytes: ByteArray)
+
+fun uploadPhoto(userId: String, petId: String, photo: PhotoUploadData): Mono<String>
+```
+
 ## Common Issues
 
 | Issue | Severity | Fix |
@@ -76,5 +99,6 @@ when {
 | Missing error handling in chain | MEDIUM | Add `onErrorResume`/`onErrorMap` |
 | `@SpringBootTest` in unit test | MEDIUM | Use `@ExtendWith(MockitoExtension::class)` |
 | Chained `if` throw validations | MEDIUM | Use `listOfNotNull`+`takeIf` or `when` |
+| Function with >5 arguments | MEDIUM | Create a `data class` DTO to group params |
 | Missing bracket identifier in log | LOW | Add `[$id]` prefix |
 | DTO reused as domain model | LOW | Create separate domain data class |
