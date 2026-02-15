@@ -16,30 +16,29 @@
 | `JWT_ISSUER_URI` | JWT token issuer | `https://dev-example.auth0.com/` |
 | `JWT_JWK_SET_URI` | JWK Set endpoint | `https://dev-example.auth0.com/.well-known/jwks.json` |
 | `AWS_S3_BUCKET_NAME` | S3 bucket for photos | `pet-app-photos` |
-| `AWS_REGION` | AWS region | `us-east-1` |
-| `AWS_ACCESS_KEY_ID` | AWS access key | (empty, required in production) |
-| `AWS_SECRET_ACCESS_KEY` | AWS secret key | (empty, required in production) |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:3000,http://localhost:3005` |
 | `MANAGEMENT_PORT` | Actuator port | `9090` |
 
 ## Input Validation
 
 ### Current Implementation
-- Business validation performed in use case layer (see `RegisterPetUseCase`)
+- Business validation performed in use case layer (see `RegisterPetUseCase`, `GenerateAvatarPresignedUrlUseCase`, `ConfirmAvatarUploadUseCase`)
 - Validations:
   - User ID: cannot be blank
   - Pet name: cannot be blank
   - Age: must be >= 0
   - Weight: must be > 0 if provided
   - Birthdate: cannot be in the future
-  - Photo size: max 5 MB
   - Pet limit: max 10 pets per user
+  - Pet ownership: user must own the pet to upload/confirm avatar
+  - Content type: only image/jpeg and image/png allowed for avatar
+  - Photo key: must match expected S3 key format (pets/{userId}/{petId}/...)
 - Domain exceptions thrown for validation failures (see `model/exception/DomainException.kt`):
   - `ValidationException`
   - `PetLimitExceededException`
-  - `PhotoSizeExceededException`
+  - `PetNotFoundException`
+  - `PhotoNotFoundException`
   - `UnauthorizedException`
-  - `PhotoUploadException`
 
 ## Authentication & Authorization
 
@@ -48,6 +47,8 @@
 - **Config class:** `SecurityConfig.kt` in `applications/pet/src/main/kotlin/com/donperry/app/configuration/`
 - **Protected endpoints:**
   - `POST /api/pets` — Requires valid JWT token (`.authenticated()`)
+  - `POST /api/pets/{petId}/avatar/presign` — Requires valid JWT token and pet ownership
+  - `POST /api/pets/{petId}/avatar/confirm` — Requires valid JWT token and pet ownership
 - **Public endpoints:**
   - `/management/**` — Health checks and actuator endpoints
 - **User extraction:** `ReactiveSecurityContextHolder.getContext().authentication.name` provides user ID
@@ -59,12 +60,21 @@
 - CSRF is disabled (stateless API)
 - User ID is extracted from JWT, not from request body
 
+## AWS Configuration
+
+### S3 Client
+- **Authentication:** Uses default AWS SDK credential provider chain (environment variables, instance profile, ~/.aws/credentials)
+- **Region:** Resolved via `DefaultAwsRegionProviderChain` (environment, config file, instance metadata)
+- **Configuration:** `S3ClientConfig` uses `S3AsyncClient.create()` and `S3Presigner.create()` with default settings
+- **Required config:** Only `aws.s3.bucket-name` in application.yaml
+
 ## Secrets Handling
 
 - Use environment variables for all secrets
 - Never commit secrets to version control
 - Docker Compose uses environment variables for database credentials
 - Application defaults are for local development only
+- AWS credentials are managed via AWS SDK default credential provider chain (no explicit config in application.yaml)
 
 ## Security Checklist for New Endpoints
 

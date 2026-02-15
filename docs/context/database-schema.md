@@ -26,7 +26,7 @@
 | photo_url | VARCHAR(500) | Yes | S3 URL for pet photo |
 
 **Entity class:** `infrastructure/postgres-db/src/main/kotlin/com/donperry/persistence/pet/entities/PetData.kt`
-**Migrations:** `infrastructure/postgres-db/src/main/resources/db/migration/V2__add_pet_fields.sql`
+**Migrations:** `db/migrations/V1__create_pets_table.sql`
 
 ## Schema Template
 
@@ -58,7 +58,7 @@ interface {Entity}Repository : ReactiveCrudRepository<{Entity}Data, String> {
 
 ### Migrations
 
-Located in `infrastructure/postgres-db/src/main/resources/db/migration/`:
-- `V2__add_pet_fields.sql` — Added birthdate, weight, nickname, photo_url to pets table
+Located in `db/migrations/`:
+- `V1__create_pets_table.sql` — Initial pets table with all fields (id, name, species, breed, age, birthdate, weight, nickname, owner, registration_date, photo_url)
 
-Migration strategy: SQL scripts in `db/migration/` directory (convention-based versioning).
+Migration strategy: SQL scripts in `db/migrations/` directory (convention-based versioning managed by Flyway).

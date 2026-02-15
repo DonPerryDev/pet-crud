@@ -74,17 +74,13 @@ interface PetPersistenceGateway {
 ```kotlin
 package com.donperry.model.{entity}.gateway
 
+import com.donperry.model.{entity}.PresignedUploadUrl
 import reactor.core.publisher.Mono
 
 interface PhotoStorageGateway {
-    fun uploadPhoto(
-        userId: String,
-        petId: String,
-        fileName: String,
-        contentType: String,
-        fileSize: Long,
-        fileBytes: ByteArray
-    ): Mono<String>
+    fun generatePresignedUrl(userId: String, petId: String, contentType: String, expirationMinutes: Int): Mono<PresignedUploadUrl>
+    fun verifyPhotoExists(photoKey: String): Mono<Boolean>
+    fun buildPhotoUrl(photoKey: String): String
 }
 ```
 
