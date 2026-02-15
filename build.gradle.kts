@@ -87,6 +87,23 @@ allprojects {
     tasks.test {
         finalizedBy(tasks.jacocoTestReport)
     }
+
+    if (project.name != "model") {
+        tasks.jacocoTestCoverageVerification {
+            dependsOn(tasks.test)
+            violationRules {
+                rule {
+                    limit {
+                        minimum = if (project.name == "usecase") "0.90".toBigDecimal() else "0.80".toBigDecimal()
+                    }
+                }
+            }
+        }
+
+        tasks.check {
+            dependsOn(tasks.jacocoTestCoverageVerification)
+        }
+    }
 }
 
 tasks.bootJar {
