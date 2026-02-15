@@ -1,4 +1,4 @@
-package com.donperry.app.security
+package com.donperry.rest.security
 
 import com.donperry.rest.security.SecurityProperties
 import org.springframework.context.annotation.Bean
@@ -23,7 +23,7 @@ class CorsGlobalConfig(
             CorsConfiguration().apply {
                 allowedOrigins = securityProperties.allowedOrigins
                 allowedMethods = listOf("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS")
-                allowedHeaders = listOf("*")
+                allowedHeaders = listOf("Content-Type", "Authorization")
                 allowCredentials = true
             }
 

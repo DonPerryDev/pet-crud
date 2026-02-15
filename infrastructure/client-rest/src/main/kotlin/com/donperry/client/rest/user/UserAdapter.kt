@@ -18,11 +18,11 @@ class UserAdapter(
         private val logger: Logger = Logger.getLogger(UserAdapter::class.java.name)
     }
 
-    override fun getByEmail(mail: String): Mono<User> {
+    override fun getByEmail(email: String): Mono<User> {
         logger.info("Fetching user by email from external service")
         return webClient
             .get()
-            .uri("/api/v1/users/email/{email}", mail)
+            .uri("/api/v1/users/email/{email}", email)
             .retrieve()
             .bodyToMono(UserData::class.java)
             .map { UserMapper.toUser(it) }

@@ -17,7 +17,7 @@ class SecurityConfig {
             .authorizeExchange { exchanges ->
                 exchanges
                     .pathMatchers("/management/**").permitAll()
-                    .pathMatchers(HttpMethod.POST, "/api/pets").authenticated()
+                    .pathMatchers(HttpMethod.POST, "/api/pets/**").authenticated()
                     .anyExchange().permitAll()
             }
             .oauth2ResourceServer { oauth2 ->

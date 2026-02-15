@@ -50,13 +50,36 @@ class PetHandler(
                 logger.info("[$userId] Processing pet registration")
                 request.bodyToMono(RegisterPetRequest::class.java)
                     .flatMap { petRequest ->
-                        val species = try {
-                            Species.valueOf(petRequest.species.uppercase())
-                        } catch (e: IllegalArgumentException) {
+                        if (petRequest.name.isBlank()) {
                             return@flatMap Mono.error<ServerResponse>(
-                                ValidationException("Invalid species: ${petRequest.species}. Must be one of: ${Species.entries.joinToString()}")
+                                ValidationException("Pet name cannot be blank")
                             )
                         }
+                        if (petRequest.species.isBlank()) {
+                            return@flatMap Mono.error<ServerResponse>(
+                                ValidationException("Pet species cannot be blank")
+                            )
+                        }
+                        petRequest.breed?.let { breed ->
+                            if (breed.isBlank()) {
+                                return@flatMap Mono.error<ServerResponse>(
+                                    ValidationException("Pet breed cannot be blank")
+                                )
+                            }
+                        }
+                        petRequest.nickname?.let { nickname ->
+                            if (nickname.isBlank()) {
+                                return@flatMap Mono.error<ServerResponse>(
+                                    ValidationException("Pet nickname cannot be blank")
+                                )
+                            }
+                        }
+
+                        val species = Species.entries.find {
+                            it.name.equals(petRequest.species, ignoreCase = true)
+                        } ?: return@flatMap Mono.error<ServerResponse>(
+                            ValidationException("Invalid species: ${petRequest.species}. Must be one of: ${Species.entries.joinToString()}")
+                        )
 
                         val command = RegisterPetCommand(
                             userId = userId,
@@ -89,6 +112,12 @@ class PetHandler(
                 logger.info("[$userId] Generating presigned URL for pet $petId")
                 request.bodyToMono(GeneratePresignedUrlRequest::class.java)
                     .flatMap { urlRequest ->
+                        if (urlRequest.contentType.isBlank()) {
+                            return@flatMap Mono.error<ServerResponse>(
+                                ValidationException("Content type cannot be blank")
+                            )
+                        }
+
                         val command = GeneratePresignedUrlCommand(
                             userId = userId,
                             petId = petId,
@@ -124,6 +153,12 @@ class PetHandler(
                 logger.info("[$userId] Confirming avatar upload for pet $petId")
                 request.bodyToMono(ConfirmAvatarUploadRequest::class.java)
                     .flatMap { confirmRequest ->
+                        if (confirmRequest.photoKey.isBlank()) {
+                            return@flatMap Mono.error<ServerResponse>(
+                                ValidationException("Photo key cannot be blank")
+                            )
+                        }
+
                         val command = ConfirmAvatarUploadCommand(
                             userId = userId,
                             petId = petId,
@@ -139,8 +174,8 @@ class PetHandler(
             }
     }
 
-    private fun buildCreatedResponse(pet: com.donperry.model.pet.Pet): Mono<ServerResponse> {
-        val response = PetResponse(
+    private fun toPetResponse(pet: com.donperry.model.pet.Pet): PetResponse =
+        PetResponse(
             id = pet.id!!,
             name = pet.name,
             species = pet.species.name,
@@ -153,29 +188,16 @@ class PetHandler(
             registrationDate = pet.registrationDate,
             photoUrl = pet.photoUrl
         )
-        return ServerResponse.status(HttpStatus.CREATED)
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(response)
-    }
 
-    private fun buildOkResponse(pet: com.donperry.model.pet.Pet): Mono<ServerResponse> {
-        val response = PetResponse(
-            id = pet.id!!,
-            name = pet.name,
-            species = pet.species.name,
-            breed = pet.breed,
-            age = pet.age,
-            birthdate = pet.birthdate,
-            weight = pet.weight,
-            nickname = pet.nickname,
-            owner = pet.owner,
-            registrationDate = pet.registrationDate,
-            photoUrl = pet.photoUrl
-        )
-        return ServerResponse.ok()
+    private fun buildCreatedResponse(pet: com.donperry.model.pet.Pet): Mono<ServerResponse> =
+        ServerResponse.status(HttpStatus.CREATED)
             .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(response)
-    }
+            .bodyValue(toPetResponse(pet))
+
+    private fun buildOkResponse(pet: com.donperry.model.pet.Pet): Mono<ServerResponse> =
+        ServerResponse.ok()
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(toPetResponse(pet))
 
     private fun handleError(throwable: Throwable): Mono<ServerResponse> {
         logger.warning("Error during pet operation: ${throwable.message}")

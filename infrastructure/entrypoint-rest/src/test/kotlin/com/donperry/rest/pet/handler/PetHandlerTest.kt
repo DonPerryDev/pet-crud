@@ -217,8 +217,6 @@ class PetHandlerTest {
 
         whenever(serverRequest.bodyToMono(RegisterPetRequest::class.java))
             .thenReturn(Mono.just(request))
-        whenever(registerPetUseCase.execute(any()))
-            .thenReturn(Mono.error(ValidationException("Pet name cannot be empty")))
 
         val authentication = TestingAuthenticationToken(userId, null)
         authentication.isAuthenticated = true
@@ -233,7 +231,7 @@ class PetHandlerTest {
                     (response as EntityResponse<*>).let { entityResponse ->
                         val body = entityResponse.entity() as ErrorResponse
                         body.error == "VALIDATION_ERROR" &&
-                            body.message == "Pet name cannot be empty"
+                            body.message == "Pet name cannot be blank"
                     }
             }
             .verifyComplete()
