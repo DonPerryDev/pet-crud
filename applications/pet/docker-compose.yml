@@ -12,6 +12,29 @@ services:
       - /Volumes/samsumg/docker/vol/postgres-data:/var/lib/postgresql/data
     networks:
       - pet-app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U petapp -d local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  flyway:
+    image: flyway/flyway:11
+    container_name: pet-app-flyway
+    command: migrate
+    environment:
+      FLYWAY_URL: jdbc:postgresql://postgres:5432/local
+      FLYWAY_USER: petapp
+      FLYWAY_PASSWORD: petapp123
+      FLYWAY_SCHEMAS: petapp
+      FLYWAY_DEFAULT_SCHEMA: petapp
+    volumes:
+      - ../../db/migrations:/flyway/sql
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pet-app-network
 
   pet-app:
     build: .
@@ -20,10 +43,10 @@ services:
       - "8080:8080"
       - "9090:9090"
     depends_on:
-      - postgres
+      flyway:
+        condition: service_completed_successfully
     environment:
       R2DBC_URL: r2dbc:postgresql://postgres:5432/local?currentSchema=petapp
-#      R2DBC_URL: r2dbc:postgresql:/host.docker.internal:5435/local?currentSchema=petapp
       R2DBC_USERNAME: petapp
       R2DBC_PASSWORD: petapp123
     networks:
