@@ -15,8 +15,10 @@ class PetRouter {
     fun petRoutes(petHandler: PetHandler): RouterFunction<ServerResponse> {
         return router {
             "/api/pets".nest {
-                contentType(MediaType.MULTIPART_FORM_DATA).nest {
+                contentType(MediaType.APPLICATION_JSON).nest {
                     POST("", petHandler::registerPet)
+                    POST("/{petId}/avatar/presign", petHandler::generatePresignedUrl)
+                    POST("/{petId}/avatar/confirm", petHandler::confirmAvatarUpload)
                 }
             }
         }

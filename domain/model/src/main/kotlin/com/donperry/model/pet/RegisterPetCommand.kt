@@ -11,6 +11,5 @@ data class RegisterPetCommand(
     val age: Int,
     val birthdate: LocalDate?,
     val weight: BigDecimal?,
-    val nickname: String?,
-    val photo: PhotoUploadData?
+    val nickname: String?
 )

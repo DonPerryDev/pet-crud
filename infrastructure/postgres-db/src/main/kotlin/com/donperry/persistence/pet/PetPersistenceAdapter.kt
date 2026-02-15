@@ -5,6 +5,7 @@ import com.donperry.model.pet.gateway.PetPersistenceGateway
 import com.donperry.persistence.pet.mapper.PetMapper
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
+import java.util.UUID
 import java.util.logging.Logger
 
 @Service
@@ -36,6 +37,18 @@ class PetPersistenceAdapter(
             }
             .doOnError { error ->
                 logger.warning("[$userId] Failed to count pets: ${error.message}")
+            }
+    }
+
+    override fun findById(petId: String): Mono<Pet> {
+        logger.fine("[$petId] Finding pet by ID")
+        return petRepository.findById(UUID.fromString(petId))
+            .map { PetMapper.toModel(it) }
+            .doOnNext { pet ->
+                logger.fine("[$petId] Pet found: ${pet.name}")
+            }
+            .doOnError { error ->
+                logger.warning("[$petId] Failed to find pet: ${error.message}")
             }
     }
 }

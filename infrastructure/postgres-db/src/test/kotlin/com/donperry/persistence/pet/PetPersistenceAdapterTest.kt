@@ -361,4 +361,80 @@ class PetPersistenceAdapterTest {
 
         verify(petRepository).countByOwner(userId)
     }
+
+    @Test
+    fun `findById should return pet when found`() {
+        // Given
+        val petId = UUID.randomUUID()
+        val petData = PetData(
+            id = petId,
+            name = "Buddy",
+            species = "DOG",
+            breed = "Golden Retriever",
+            age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
+            owner = "user-123",
+            registrationDate = LocalDate.now(),
+            photoUrl = null
+        )
+
+        `when`(petRepository.findById(petId)).thenReturn(Mono.just(petData))
+
+        // When
+        val result = petPersistenceAdapter.findById(petId.toString())
+
+        // Then
+        StepVerifier.create(result)
+            .expectNextMatches { pet ->
+                pet.id == petId.toString() &&
+                pet.name == "Buddy" &&
+                pet.species == Species.DOG &&
+                pet.breed == "Golden Retriever" &&
+                pet.age == 3 &&
+                pet.owner == "user-123"
+            }
+            .verifyComplete()
+
+        verify(petRepository).findById(petId)
+    }
+
+    @Test
+    fun `findById should return empty when not found`() {
+        // Given
+        val petId = UUID.randomUUID()
+
+        `when`(petRepository.findById(petId)).thenReturn(Mono.empty())
+
+        // When
+        val result = petPersistenceAdapter.findById(petId.toString())
+
+        // Then
+        StepVerifier.create(result)
+            .verifyComplete()
+
+        verify(petRepository).findById(petId)
+    }
+
+    @Test
+    fun `findById should propagate repository errors`() {
+        // Given
+        val petId = UUID.randomUUID()
+        val repositoryError = RuntimeException("Database query failed")
+
+        `when`(petRepository.findById(petId)).thenReturn(Mono.error(repositoryError))
+
+        // When
+        val result = petPersistenceAdapter.findById(petId.toString())
+
+        // Then
+        StepVerifier.create(result)
+            .expectErrorMatches { throwable ->
+                throwable is RuntimeException && throwable.message == "Database query failed"
+            }
+            .verify()
+
+        verify(petRepository).findById(petId)
+    }
 }

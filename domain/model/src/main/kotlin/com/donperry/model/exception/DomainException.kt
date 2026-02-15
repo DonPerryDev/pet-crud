@@ -13,3 +13,7 @@ class PhotoSizeExceededException(actualSize: Long, maxSize: Long) :
     DomainException("Photo size $actualSize bytes exceeds maximum allowed size of $maxSize bytes")
 
 class UnauthorizedException(message: String) : DomainException(message)
+
+class PetNotFoundException(petId: String) : DomainException("Pet with id $petId not found")
+
+class PhotoNotFoundException(photoKey: String) : DomainException("Photo not found in storage: $photoKey")
