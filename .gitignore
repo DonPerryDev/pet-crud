@@ -165,7 +165,6 @@ build/
 /.gradle/
 /.gradle/buildOutputCleanup/
 /.kotlin/
-docs
 
 .claude
 
