@@ -34,6 +34,37 @@ Reviews code for architecture compliance, quality, security, and test coverage.
 - [ ] No `@SpringBootTest` in unit tests
 - [ ] Mocks for interfaces/gateways, not concrete classes
 
+## Validation Patterns
+
+Flag chained `if (...) throw` blocks as a code smell. Require idiomatic Kotlin alternatives:
+
+| Scenario | Pattern | Example |
+|----------|---------|---------|
+| Multiple field validations | `listOfNotNull` + `takeIf` | Aggregates all errors into one `ValidationException` with `joinToString("; ")` |
+| Single guard condition | `when` expression | Fail-fast with one `throw` |
+
+**Bad** (flag as MEDIUM severity):
+```kotlin
+if (name.isBlank()) throw ValidationException("Name required")
+if (age < 0) throw ValidationException("Invalid age")
+```
+
+**Good** — aggregate:
+```kotlin
+val errors = listOfNotNull(
+    "Name required".takeIf { name.isBlank() },
+    "Invalid age".takeIf { age < 0 },
+)
+if (errors.isNotEmpty()) throw ValidationException(errors.joinToString("; "))
+```
+
+**Good** — fail-fast single check:
+```kotlin
+when {
+    photoSize > MAX_SIZE -> throw PhotoSizeExceededException(photoSize, MAX_SIZE)
+}
+```
+
 ## Common Issues
 
 | Issue | Severity | Fix |
@@ -44,5 +75,6 @@ Reviews code for architecture compliance, quality, security, and test coverage.
 | `println` in production | MEDIUM | Replace with `logger.info` |
 | Missing error handling in chain | MEDIUM | Add `onErrorResume`/`onErrorMap` |
 | `@SpringBootTest` in unit test | MEDIUM | Use `@ExtendWith(MockitoExtension::class)` |
+| Chained `if` throw validations | MEDIUM | Use `listOfNotNull`+`takeIf` or `when` |
 | Missing bracket identifier in log | LOW | Add `[$id]` prefix |
 | DTO reused as domain model | LOW | Create separate domain data class |

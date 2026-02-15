@@ -28,6 +28,35 @@ Implements production Kotlin/Spring WebFlux code following Clean Architecture pa
 - [ ] No Spring annotations in `domain/model` or `domain/usecase`
 - [ ] Build passes: `./gradlew clean build`
 
+## Validation Patterns
+
+Use **idiomatic Kotlin** instead of chained `if` throws:
+
+**Aggregate errors** — when the user benefits from seeing all validation failures at once:
+```kotlin
+private fun validateInputs(userId: String, name: String, age: Int) {
+    val errors = listOfNotNull(
+        "User ID cannot be blank".takeIf { userId.isBlank() },
+        "Name cannot be blank".takeIf { name.isBlank() },
+        "Age must be zero or greater".takeIf { age < 0 },
+    )
+    if (errors.isNotEmpty()) {
+        throw ValidationException(errors.joinToString("; "))
+    }
+}
+```
+
+**Fail-fast** — when a single condition is enough to reject:
+```kotlin
+private fun validatePhoto(photoSize: Long?) {
+    when {
+        photoSize != null && photoSize > MAX_SIZE -> throw PhotoSizeExceededException(photoSize, MAX_SIZE)
+    }
+}
+```
+
+> **Never** use chained `if (...) throw` blocks. Use `listOfNotNull` + `takeIf` for multi-field validation, `when` for single-condition guards.
+
 ## Common Issues
 
 | Issue | Fix |

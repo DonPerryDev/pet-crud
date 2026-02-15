@@ -70,26 +70,22 @@ class RegisterPetUseCase(
     }
 
     private fun validateInputs(userId: String, name: String, age: Int, birthdate: LocalDate?, weight: BigDecimal?) {
-        if (userId.isBlank()) {
-            throw ValidationException("User ID cannot be blank")
-        }
-        if (name.isBlank()) {
-            throw ValidationException("Pet name cannot be blank")
-        }
-        if (age < 0) {
-            throw ValidationException("Pet age must be zero or greater")
-        }
-        if (weight != null && weight <= BigDecimal.ZERO) {
-            throw ValidationException("Pet weight must be greater than zero")
-        }
-        if (birthdate != null && birthdate.isAfter(LocalDate.now())) {
-            throw ValidationException("Pet birthdate cannot be in the future")
+        val errors = listOfNotNull(
+            "User ID cannot be blank".takeIf { userId.isBlank() },
+            "Pet name cannot be blank".takeIf { name.isBlank() },
+            "Pet age must be zero or greater".takeIf { age < 0 },
+            "Pet weight must be greater than zero".takeIf { weight != null && weight <= BigDecimal.ZERO },
+            "Pet birthdate cannot be in the future".takeIf { birthdate != null && birthdate.isAfter(LocalDate.now()) },
+        )
+        if (errors.isNotEmpty()) {
+            throw ValidationException(errors.joinToString("; "))
         }
     }
 
     private fun validatePhoto(photoSize: Long?) {
-        if (photoSize != null && photoSize > MAX_PHOTO_SIZE_BYTES) {
-            throw PhotoSizeExceededException(photoSize, MAX_PHOTO_SIZE_BYTES)
+        when {
+            photoSize != null && photoSize > MAX_PHOTO_SIZE_BYTES ->
+                throw PhotoSizeExceededException(photoSize, MAX_PHOTO_SIZE_BYTES)
         }
     }
 
