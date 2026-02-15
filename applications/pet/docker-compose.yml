@@ -36,21 +36,21 @@ services:
     networks:
       - pet-app-network
 
-  pet-app:
-    build: .
-    container_name: pet-app
-    ports:
-      - "8080:8080"
-      - "9090:9090"
-    depends_on:
-      flyway:
-        condition: service_completed_successfully
-    environment:
-      R2DBC_URL: r2dbc:postgresql://postgres:5432/local?currentSchema=petapp
-      R2DBC_USERNAME: petapp
-      R2DBC_PASSWORD: petapp123
-    networks:
-      - pet-app-network
+#  pet-app:
+#    build: .
+#    container_name: pet-app
+#    ports:
+#      - "8080:8080"
+#      - "9090:9090"
+#    depends_on:
+#      flyway:
+#        condition: service_completed_successfully
+#    environment:
+#      R2DBC_URL: r2dbc:postgresql://postgres:5432/local?currentSchema=petapp
+#      R2DBC_USERNAME: petapp
+#      R2DBC_PASSWORD: petapp123
+#    networks:
+#      - pet-app-network
 
 networks:
   pet-app-network:

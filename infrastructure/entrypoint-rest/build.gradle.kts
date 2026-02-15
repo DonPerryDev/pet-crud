@@ -8,7 +8,6 @@ dependencies {
     implementation(project(":usecase"))
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
-    implementation("org.springframework.security:spring-security-core")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     testImplementation("org.mockito:mockito-core:${Versions.mockito}")

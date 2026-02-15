@@ -20,8 +20,6 @@ dependencies {
     implementation("org.springframework:spring-context")
 
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 }
 
 tasks.register<Copy>("explodedJar") {

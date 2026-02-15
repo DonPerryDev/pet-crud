@@ -22,7 +22,6 @@ import com.donperry.usecase.pet.GenerateAvatarPresignedUrlUseCase
 import com.donperry.usecase.pet.RegisterPetUseCase
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
 import org.springframework.web.reactive.function.server.ServerResponse
@@ -43,59 +42,58 @@ class PetHandler(
     fun registerPet(request: ServerRequest): Mono<ServerResponse> {
         logger.fine("Received pet registration request")
 
-        return ReactiveSecurityContextHolder.getContext()
-            .map { it.authentication.name }
-            .switchIfEmpty(Mono.error(UnauthorizedException("No authentication found")))
-            .flatMap { userId ->
-                logger.info("[$userId] Processing pet registration")
-                request.bodyToMono(RegisterPetRequest::class.java)
-                    .flatMap { petRequest ->
-                        if (petRequest.name.isBlank()) {
-                            return@flatMap Mono.error<ServerResponse>(
-                                ValidationException("Pet name cannot be blank")
-                            )
-                        }
-                        if (petRequest.species.isBlank()) {
-                            return@flatMap Mono.error<ServerResponse>(
-                                ValidationException("Pet species cannot be blank")
-                            )
-                        }
-                        petRequest.breed?.let { breed ->
-                            if (breed.isBlank()) {
-                                return@flatMap Mono.error<ServerResponse>(
-                                    ValidationException("Pet breed cannot be blank")
-                                )
-                            }
-                        }
-                        petRequest.nickname?.let { nickname ->
-                            if (nickname.isBlank()) {
-                                return@flatMap Mono.error<ServerResponse>(
-                                    ValidationException("Pet nickname cannot be blank")
-                                )
-                            }
-                        }
+        return Mono.defer {
+            val userId = extractUserId(request)
+            logger.info("[$userId] Processing pet registration")
 
-                        val species = Species.entries.find {
-                            it.name.equals(petRequest.species, ignoreCase = true)
-                        } ?: return@flatMap Mono.error<ServerResponse>(
-                            ValidationException("Invalid species: ${petRequest.species}. Must be one of: ${Species.entries.joinToString()}")
+            request.bodyToMono(RegisterPetRequest::class.java)
+            .flatMap { petRequest ->
+                if (petRequest.name.isBlank()) {
+                    return@flatMap Mono.error<ServerResponse>(
+                        ValidationException("Pet name cannot be blank")
+                    )
+                }
+                if (petRequest.species.isBlank()) {
+                    return@flatMap Mono.error<ServerResponse>(
+                        ValidationException("Pet species cannot be blank")
+                    )
+                }
+                petRequest.breed?.let { breed ->
+                    if (breed.isBlank()) {
+                        return@flatMap Mono.error<ServerResponse>(
+                            ValidationException("Pet breed cannot be blank")
                         )
-
-                        val command = RegisterPetCommand(
-                            userId = userId,
-                            name = petRequest.name,
-                            species = species,
-                            breed = petRequest.breed,
-                            age = petRequest.age,
-                            birthdate = petRequest.birthdate,
-                            weight = petRequest.weight,
-                            nickname = petRequest.nickname
-                        )
-
-                        registerPetUseCase.execute(command)
-                            .flatMap { pet -> buildCreatedResponse(pet) }
                     }
+                }
+                petRequest.nickname?.let { nickname ->
+                    if (nickname.isBlank()) {
+                        return@flatMap Mono.error<ServerResponse>(
+                            ValidationException("Pet nickname cannot be blank")
+                        )
+                    }
+                }
+
+                val species = Species.entries.find {
+                    it.name.equals(petRequest.species, ignoreCase = true)
+                } ?: return@flatMap Mono.error<ServerResponse>(
+                    ValidationException("Invalid species: ${petRequest.species}. Must be one of: ${Species.entries.joinToString()}")
+                )
+
+                val command = RegisterPetCommand(
+                    userId = userId,
+                    name = petRequest.name,
+                    species = species,
+                    breed = petRequest.breed,
+                    age = petRequest.age,
+                    birthdate = petRequest.birthdate,
+                    weight = petRequest.weight,
+                    nickname = petRequest.nickname
+                )
+
+                registerPetUseCase.execute(command)
+                    .flatMap { pet -> buildCreatedResponse(pet) }
             }
+        }
             .onErrorResume { throwable ->
                 handleError(throwable)
             }
@@ -105,38 +103,37 @@ class PetHandler(
         val petId = request.pathVariable("petId")
         logger.fine("Received presigned URL generation request for pet: $petId")
 
-        return ReactiveSecurityContextHolder.getContext()
-            .map { it.authentication.name }
-            .switchIfEmpty(Mono.error(UnauthorizedException("No authentication found")))
-            .flatMap { userId ->
-                logger.info("[$userId] Generating presigned URL for pet $petId")
-                request.bodyToMono(GeneratePresignedUrlRequest::class.java)
-                    .flatMap { urlRequest ->
-                        if (urlRequest.contentType.isBlank()) {
-                            return@flatMap Mono.error<ServerResponse>(
-                                ValidationException("Content type cannot be blank")
-                            )
-                        }
+        return Mono.defer {
+            val userId = extractUserId(request)
+            logger.info("[$userId] Generating presigned URL for pet $petId")
 
-                        val command = GeneratePresignedUrlCommand(
-                            userId = userId,
-                            petId = petId,
-                            contentType = urlRequest.contentType
+            request.bodyToMono(GeneratePresignedUrlRequest::class.java)
+            .flatMap { urlRequest ->
+                if (urlRequest.contentType.isBlank()) {
+                    return@flatMap Mono.error<ServerResponse>(
+                        ValidationException("Content type cannot be blank")
+                    )
+                }
+
+                val command = GeneratePresignedUrlCommand(
+                    userId = userId,
+                    petId = petId,
+                    contentType = urlRequest.contentType
+                )
+
+                generateAvatarPresignedUrlUseCase.execute(command)
+                    .flatMap { presignedUrl ->
+                        val response = PresignedUrlResponse(
+                            uploadUrl = presignedUrl.uploadUrl,
+                            key = presignedUrl.key,
+                            expiresAt = presignedUrl.expiresAt.toString()
                         )
-
-                        generateAvatarPresignedUrlUseCase.execute(command)
-                            .flatMap { presignedUrl ->
-                                val response = PresignedUrlResponse(
-                                    uploadUrl = presignedUrl.uploadUrl,
-                                    key = presignedUrl.key,
-                                    expiresAt = presignedUrl.expiresAt.toString()
-                                )
-                                ServerResponse.ok()
-                                    .contentType(MediaType.APPLICATION_JSON)
-                                    .bodyValue(response)
-                            }
+                        ServerResponse.ok()
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .bodyValue(response)
                     }
             }
+        }
             .onErrorResume { throwable ->
                 handleError(throwable)
             }
@@ -146,33 +143,37 @@ class PetHandler(
         val petId = request.pathVariable("petId")
         logger.fine("Received avatar upload confirmation request for pet: $petId")
 
-        return ReactiveSecurityContextHolder.getContext()
-            .map { it.authentication.name }
-            .switchIfEmpty(Mono.error(UnauthorizedException("No authentication found")))
-            .flatMap { userId ->
-                logger.info("[$userId] Confirming avatar upload for pet $petId")
-                request.bodyToMono(ConfirmAvatarUploadRequest::class.java)
-                    .flatMap { confirmRequest ->
-                        if (confirmRequest.photoKey.isBlank()) {
-                            return@flatMap Mono.error<ServerResponse>(
-                                ValidationException("Photo key cannot be blank")
-                            )
-                        }
+        return Mono.defer {
+            val userId = extractUserId(request)
+            logger.info("[$userId] Confirming avatar upload for pet $petId")
 
-                        val command = ConfirmAvatarUploadCommand(
-                            userId = userId,
-                            petId = petId,
-                            photoKey = confirmRequest.photoKey
-                        )
+            request.bodyToMono(ConfirmAvatarUploadRequest::class.java)
+            .flatMap { confirmRequest ->
+                if (confirmRequest.photoKey.isBlank()) {
+                    return@flatMap Mono.error<ServerResponse>(
+                        ValidationException("Photo key cannot be blank")
+                    )
+                }
 
-                        confirmAvatarUploadUseCase.execute(command)
-                            .flatMap { pet -> buildOkResponse(pet) }
-                    }
+                val command = ConfirmAvatarUploadCommand(
+                    userId = userId,
+                    petId = petId,
+                    photoKey = confirmRequest.photoKey
+                )
+
+                confirmAvatarUploadUseCase.execute(command)
+                    .flatMap { pet -> buildOkResponse(pet) }
             }
+        }
             .onErrorResume { throwable ->
                 handleError(throwable)
             }
     }
+
+    private fun extractUserId(request: ServerRequest): String =
+        request.attribute("userId")
+            .map { it as String }
+            .orElseThrow { UnauthorizedException("No authentication found") }
 
     private fun toPetResponse(pet: com.donperry.model.pet.Pet): PetResponse =
         PetResponse(

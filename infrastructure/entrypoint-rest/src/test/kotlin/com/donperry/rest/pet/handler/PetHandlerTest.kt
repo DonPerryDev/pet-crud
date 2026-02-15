@@ -25,8 +25,6 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.http.HttpStatus
-import org.springframework.security.authentication.TestingAuthenticationToken
-import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.web.reactive.function.server.EntityResponse
 import org.springframework.web.reactive.function.server.ServerRequest
 import reactor.core.publisher.Mono
@@ -34,6 +32,7 @@ import reactor.test.StepVerifier
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
+import java.util.Optional
 
 @ExtendWith(MockitoExtension::class)
 class PetHandlerTest {
@@ -85,16 +84,11 @@ class PetHandlerTest {
 
         whenever(serverRequest.bodyToMono(RegisterPetRequest::class.java))
             .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(registerPetUseCase.execute(any())).thenReturn(Mono.just(expectedPet))
 
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
-
         // Act & Assert
-        StepVerifier.create(
-            petHandler.registerPet(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.registerPet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.CREATED &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -127,15 +121,10 @@ class PetHandlerTest {
 
         whenever(serverRequest.bodyToMono(RegisterPetRequest::class.java))
             .thenReturn(Mono.just(request))
-
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
 
         // Act & Assert
-        StepVerifier.create(
-            petHandler.registerPet(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.registerPet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.BAD_REQUEST &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -149,7 +138,8 @@ class PetHandlerTest {
 
     @Test
     fun `should return 401 when no authentication context is found for registerPet`() {
-        // Arrange - no authentication context
+        // Arrange
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.empty())
 
         // Act & Assert
         StepVerifier.create(petHandler.registerPet(serverRequest))
@@ -180,17 +170,12 @@ class PetHandlerTest {
 
         whenever(serverRequest.bodyToMono(RegisterPetRequest::class.java))
             .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(registerPetUseCase.execute(any()))
             .thenReturn(Mono.error(PetLimitExceededException(userId)))
 
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
-
         // Act & Assert
-        StepVerifier.create(
-            petHandler.registerPet(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.registerPet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.CONFLICT &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -217,15 +202,10 @@ class PetHandlerTest {
 
         whenever(serverRequest.bodyToMono(RegisterPetRequest::class.java))
             .thenReturn(Mono.just(request))
-
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
 
         // Act & Assert
-        StepVerifier.create(
-            petHandler.registerPet(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.registerPet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.BAD_REQUEST &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -253,17 +233,12 @@ class PetHandlerTest {
 
         whenever(serverRequest.bodyToMono(RegisterPetRequest::class.java))
             .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(registerPetUseCase.execute(any()))
             .thenReturn(Mono.error(RuntimeException("Unexpected database error")))
 
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
-
         // Act & Assert
-        StepVerifier.create(
-            petHandler.registerPet(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.registerPet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.INTERNAL_SERVER_ERROR &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -293,17 +268,12 @@ class PetHandlerTest {
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.bodyToMono(GeneratePresignedUrlRequest::class.java))
             .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(generateAvatarPresignedUrlUseCase.execute(any()))
             .thenReturn(Mono.just(presignedUrl))
 
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
-
         // Act & Assert
-        StepVerifier.create(
-            petHandler.generatePresignedUrl(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.generatePresignedUrl(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.OK &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -321,6 +291,7 @@ class PetHandlerTest {
         // Arrange
         val petId = "pet-123"
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.empty())
 
         // Act & Assert
         StepVerifier.create(petHandler.generatePresignedUrl(serverRequest))
@@ -345,17 +316,12 @@ class PetHandlerTest {
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.bodyToMono(GeneratePresignedUrlRequest::class.java))
             .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(generateAvatarPresignedUrlUseCase.execute(any()))
             .thenReturn(Mono.error(PetNotFoundException(petId)))
 
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
-
         // Act & Assert
-        StepVerifier.create(
-            petHandler.generatePresignedUrl(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.generatePresignedUrl(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.NOT_FOUND &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -376,17 +342,12 @@ class PetHandlerTest {
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.bodyToMono(GeneratePresignedUrlRequest::class.java))
             .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(generateAvatarPresignedUrlUseCase.execute(any()))
             .thenReturn(Mono.error(UnauthorizedException("User does not own this pet")))
 
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
-
         // Act & Assert
-        StepVerifier.create(
-            petHandler.generatePresignedUrl(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.generatePresignedUrl(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.UNAUTHORIZED &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -408,17 +369,12 @@ class PetHandlerTest {
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.bodyToMono(GeneratePresignedUrlRequest::class.java))
             .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(generateAvatarPresignedUrlUseCase.execute(any()))
             .thenReturn(Mono.error(ValidationException("Invalid content type")))
 
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
-
         // Act & Assert
-        StepVerifier.create(
-            petHandler.generatePresignedUrl(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.generatePresignedUrl(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.BAD_REQUEST &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -456,17 +412,12 @@ class PetHandlerTest {
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.bodyToMono(ConfirmAvatarUploadRequest::class.java))
             .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(confirmAvatarUploadUseCase.execute(any()))
             .thenReturn(Mono.just(updatedPet))
 
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
-
         // Act & Assert
-        StepVerifier.create(
-            petHandler.confirmAvatarUpload(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.confirmAvatarUpload(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.OK &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -484,6 +435,7 @@ class PetHandlerTest {
         // Arrange
         val petId = "pet-123"
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.empty())
 
         // Act & Assert
         StepVerifier.create(petHandler.confirmAvatarUpload(serverRequest))
@@ -508,17 +460,12 @@ class PetHandlerTest {
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.bodyToMono(ConfirmAvatarUploadRequest::class.java))
             .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(confirmAvatarUploadUseCase.execute(any()))
             .thenReturn(Mono.error(PetNotFoundException(petId)))
 
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
-
         // Act & Assert
-        StepVerifier.create(
-            petHandler.confirmAvatarUpload(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.confirmAvatarUpload(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.NOT_FOUND &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -540,17 +487,12 @@ class PetHandlerTest {
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.bodyToMono(ConfirmAvatarUploadRequest::class.java))
             .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(confirmAvatarUploadUseCase.execute(any()))
             .thenReturn(Mono.error(PhotoNotFoundException(photoKey)))
 
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
-
         // Act & Assert
-        StepVerifier.create(
-            petHandler.confirmAvatarUpload(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.confirmAvatarUpload(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.NOT_FOUND &&
                     (response as EntityResponse<*>).let { entityResponse ->
@@ -571,17 +513,12 @@ class PetHandlerTest {
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.bodyToMono(ConfirmAvatarUploadRequest::class.java))
             .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(confirmAvatarUploadUseCase.execute(any()))
             .thenReturn(Mono.error(UnauthorizedException("User does not own this pet")))
 
-        val authentication = TestingAuthenticationToken(userId, null)
-        authentication.isAuthenticated = true
-
         // Act & Assert
-        StepVerifier.create(
-            petHandler.confirmAvatarUpload(serverRequest)
-                .contextWrite(ReactiveSecurityContextHolder.withAuthentication(authentication))
-        )
+        StepVerifier.create(petHandler.confirmAvatarUpload(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.UNAUTHORIZED &&
                     (response as EntityResponse<*>).let { entityResponse ->
