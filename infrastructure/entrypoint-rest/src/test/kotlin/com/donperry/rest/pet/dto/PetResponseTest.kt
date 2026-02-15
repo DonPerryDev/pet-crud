@@ -1,6 +1,7 @@
 package com.donperry.rest.pet.dto
 
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 import java.time.LocalDate
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -26,8 +27,12 @@ class PetResponseTest {
             species = species,
             breed = breed,
             age = age,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = owner,
-            registrationDate = registrationDate
+            registrationDate = registrationDate,
+            photoUrl = null
         )
 
         // Then
@@ -36,8 +41,12 @@ class PetResponseTest {
         assertEquals(species, response.species)
         assertEquals(breed, response.breed)
         assertEquals(age, response.age)
+        assertNull(response.birthdate)
+        assertNull(response.weight)
+        assertNull(response.nickname)
         assertEquals(owner, response.owner)
         assertEquals(registrationDate, response.registrationDate)
+        assertNull(response.photoUrl)
     }
 
     @Test
@@ -49,8 +58,12 @@ class PetResponseTest {
             species = "Cat",
             breed = null,
             age = 2,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Jane Smith",
-            registrationDate = LocalDate.now()
+            registrationDate = LocalDate.now(),
+            photoUrl = null
         )
 
         // Then
@@ -59,7 +72,11 @@ class PetResponseTest {
         assertEquals("Cat", response.species)
         assertNull(response.breed)
         assertEquals(2, response.age)
+        assertNull(response.birthdate)
+        assertNull(response.weight)
+        assertNull(response.nickname)
         assertEquals("Jane Smith", response.owner)
+        assertNull(response.photoUrl)
     }
 
     @Test
@@ -71,8 +88,12 @@ class PetResponseTest {
             species = "Dog",
             breed = "",
             age = 5,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Bob Wilson",
-            registrationDate = LocalDate.now()
+            registrationDate = LocalDate.now(),
+            photoUrl = null
         )
 
         // Then
@@ -81,7 +102,11 @@ class PetResponseTest {
         assertEquals("Dog", response.species)
         assertEquals("", response.breed)
         assertEquals(5, response.age)
+        assertNull(response.birthdate)
+        assertNull(response.weight)
+        assertNull(response.nickname)
         assertEquals("Bob Wilson", response.owner)
+        assertNull(response.photoUrl)
     }
 
     @Test
@@ -90,20 +115,28 @@ class PetResponseTest {
         val response = PetResponse(
             id = "pet-000",
             name = "NewBorn",
-            species = "Hamster",
+            species = "Dog",
             breed = "Syrian",
             age = 0,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Pet Store",
-            registrationDate = LocalDate.now()
+            registrationDate = LocalDate.now(),
+            photoUrl = null
         )
 
         // Then
         assertEquals("pet-000", response.id)
         assertEquals("NewBorn", response.name)
-        assertEquals("Hamster", response.species)
+        assertEquals("Dog", response.species)
         assertEquals("Syrian", response.breed)
         assertEquals(0, response.age)
+        assertNull(response.birthdate)
+        assertNull(response.weight)
+        assertNull(response.nickname)
         assertEquals("Pet Store", response.owner)
+        assertNull(response.photoUrl)
     }
 
     @Test
@@ -116,18 +149,26 @@ class PetResponseTest {
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "John Doe",
-            registrationDate = registrationDate
+            registrationDate = registrationDate,
+            photoUrl = null
         )
-        
+
         val response2 = PetResponse(
             id = "pet-123",
             name = "Buddy",
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "John Doe",
-            registrationDate = registrationDate
+            registrationDate = registrationDate,
+            photoUrl = null
         )
 
         // Then
@@ -144,18 +185,26 @@ class PetResponseTest {
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "John Doe",
-            registrationDate = LocalDate.of(2023, 10, 15)
+            registrationDate = LocalDate.of(2023, 10, 15),
+            photoUrl = null
         )
-        
+
         val response2 = PetResponse(
             id = "pet-456",
             name = "Mittens",
             species = "Cat",
             breed = "Persian",
             age = 2,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Jane Smith",
-            registrationDate = LocalDate.of(2023, 11, 20)
+            registrationDate = LocalDate.of(2023, 11, 20),
+            photoUrl = null
         )
 
         // Then
@@ -173,18 +222,26 @@ class PetResponseTest {
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "John Doe",
-            registrationDate = registrationDate
+            registrationDate = registrationDate,
+            photoUrl = null
         )
-        
+
         val response2 = PetResponse(
             id = "pet-456",
             name = "Buddy",
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "John Doe",
-            registrationDate = registrationDate
+            registrationDate = registrationDate,
+            photoUrl = null
         )
 
         // Then
@@ -200,12 +257,16 @@ class PetResponseTest {
             species = "Dog",
             breed = "Labrador",
             age = 4,
+            birthdate = LocalDate.of(2020, 1, 1),
+            weight = BigDecimal("25.5"),
+            nickname = "Chuck",
             owner = "Mike Johnson",
-            registrationDate = LocalDate.of(2023, 11, 20)
+            registrationDate = LocalDate.of(2023, 11, 20),
+            photoUrl = "https://example.com/photo.jpg"
         )
 
         // When
-        val (id, name, species, breed, age, owner, registrationDate) = response
+        val (id, name, species, breed, age, birthdate, weight, nickname, owner, registrationDate, photoUrl) = response
 
         // Then
         assertEquals("pet-123", id)
@@ -213,8 +274,12 @@ class PetResponseTest {
         assertEquals("Dog", species)
         assertEquals("Labrador", breed)
         assertEquals(4, age)
+        assertEquals(LocalDate.of(2020, 1, 1), birthdate)
+        assertEquals(BigDecimal("25.5"), weight)
+        assertEquals("Chuck", nickname)
         assertEquals("Mike Johnson", owner)
         assertEquals(LocalDate.of(2023, 11, 20), registrationDate)
+        assertEquals("https://example.com/photo.jpg", photoUrl)
     }
 
     @Test
@@ -226,8 +291,12 @@ class PetResponseTest {
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "John Doe",
-            registrationDate = LocalDate.now()
+            registrationDate = LocalDate.now(),
+            photoUrl = null
         )
 
         // When
@@ -252,8 +321,12 @@ class PetResponseTest {
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
+            birthdate = LocalDate.of(2020, 5, 15),
+            weight = BigDecimal("30.0"),
+            nickname = "Bud",
             owner = "John Doe",
-            registrationDate = LocalDate.of(2023, 12, 25)
+            registrationDate = LocalDate.of(2023, 12, 25),
+            photoUrl = "https://example.com/photo.jpg"
         )
 
         // When
@@ -279,11 +352,15 @@ class PetResponseTest {
         val futureResponse = PetResponse(
             id = "pet-future",
             name = "Future Pet",
-            species = "Robot",
+            species = "Dog",
             breed = "AI",
             age = 1,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Future Owner",
-            registrationDate = futureDate
+            registrationDate = futureDate,
+            photoUrl = null
         )
 
         val pastResponse = PetResponse(
@@ -292,8 +369,12 @@ class PetResponseTest {
             species = "Dog",
             breed = "Ancient",
             age = 10,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Past Owner",
-            registrationDate = pastDate
+            registrationDate = pastDate,
+            photoUrl = null
         )
 
         // Then
@@ -310,12 +391,41 @@ class PetResponseTest {
             species = "Cat",
             breed = "Digital",
             age = 2,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Tech Owner",
-            registrationDate = LocalDate.now()
+            registrationDate = LocalDate.now(),
+            photoUrl = null
         )
 
         // Then
         assertEquals("550e8400-e29b-41d4-a716-446655440000", response.id)
         assertEquals("UUID Pet", response.name)
+    }
+
+    @Test
+    fun `PetResponse should handle new optional fields`() {
+        // When
+        val response = PetResponse(
+            id = "pet-123",
+            name = "Max",
+            species = "Dog",
+            breed = "Beagle",
+            age = 2,
+            birthdate = LocalDate.of(2022, 3, 10),
+            weight = BigDecimal("15.7"),
+            nickname = "Maxie",
+            owner = "Owner Name",
+            registrationDate = LocalDate.now(),
+            photoUrl = "https://example.com/max.jpg"
+        )
+
+        // Then
+        assertEquals("Max", response.name)
+        assertEquals(LocalDate.of(2022, 3, 10), response.birthdate)
+        assertEquals(BigDecimal("15.7"), response.weight)
+        assertEquals("Maxie", response.nickname)
+        assertEquals("https://example.com/max.jpg", response.photoUrl)
     }
 }

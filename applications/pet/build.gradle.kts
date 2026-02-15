@@ -5,6 +5,7 @@ dependencies {
     implementation(project(":rest"))
     implementation(project(":usecase"))
     implementation(project(":persistence"))
+    implementation(project(":s3-storage"))
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter")
     configurations {
@@ -19,6 +20,8 @@ dependencies {
     implementation("org.springframework:spring-context")
 
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 }
 
 tasks.register<Copy>("explodedJar") {

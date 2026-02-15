@@ -1,6 +1,7 @@
 package com.donperry.persistence.pet
 
 import com.donperry.model.pet.Pet
+import com.donperry.model.pet.Species
 import com.donperry.persistence.pet.entities.PetData
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -37,21 +38,29 @@ class PetPersistenceAdapterTest {
         val petModel = Pet(
             id = null, // New pet without ID
             name = "Buddy",
-            species = "Dog",
+            species = Species.DOG,
             breed = "Golden Retriever",
             age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "John Doe",
-            registrationDate = LocalDate.now()
+            registrationDate = LocalDate.now(),
+            photoUrl = null
         )
 
         val savedPetData = PetData(
             id = UUID.randomUUID(),
             name = "Buddy",
-            species = "Dog",
+            species = "DOG",
             breed = "Golden Retriever",
             age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "John Doe",
-            registrationDate = LocalDate.now()
+            registrationDate = LocalDate.now(),
+            photoUrl = null
         )
 
         `when`(petRepository.save(any<PetData>())).thenReturn(Mono.just(savedPetData))
@@ -64,20 +73,24 @@ class PetPersistenceAdapterTest {
             .expectNextMatches { savedPet ->
                 savedPet.id == savedPetData.id.toString() &&
                 savedPet.name == "Buddy" &&
-                savedPet.species == "Dog" &&
+                savedPet.species == Species.DOG &&
                 savedPet.breed == "Golden Retriever" &&
                 savedPet.age == 3 &&
+                savedPet.birthdate == null &&
+                savedPet.weight == null &&
+                savedPet.nickname == null &&
                 savedPet.owner == "John Doe" &&
+                savedPet.photoUrl == null &&
                 savedPet.registrationDate == savedPetData.registrationDate
             }
             .verifyComplete()
 
         val petDataCaptor = argumentCaptor<PetData>()
         verify(petRepository).save(petDataCaptor.capture())
-        
+
         val capturedPetData = petDataCaptor.firstValue
         assertEquals("Buddy", capturedPetData.name)
-        assertEquals("Dog", capturedPetData.species)
+        assertEquals("DOG", capturedPetData.species)
         assertEquals("Golden Retriever", capturedPetData.breed)
         assertEquals(3, capturedPetData.age)
         assertEquals("John Doe", capturedPetData.owner)
@@ -91,7 +104,7 @@ class PetPersistenceAdapterTest {
         val petModel = Pet(
             id = existingId.toString(),
             name = "Buddy",
-            species = "Dog",
+            species = Species.DOG,
             breed = "Golden Retriever",
             age = 3,
             owner = "John Doe",
@@ -101,7 +114,7 @@ class PetPersistenceAdapterTest {
         val savedPetData = PetData(
             id = existingId,
             name = "Buddy",
-            species = "Dog",
+            species = "DOG",
             breed = "Golden Retriever",
             age = 3,
             owner = "John Doe",
@@ -133,7 +146,7 @@ class PetPersistenceAdapterTest {
         val petModel = Pet(
             id = null,
             name = "Mittens",
-            species = "Cat",
+            species = Species.CAT,
             breed = null,
             age = 2,
             owner = "Jane Smith",
@@ -143,7 +156,7 @@ class PetPersistenceAdapterTest {
         val savedPetData = PetData(
             id = UUID.randomUUID(),
             name = "Mittens",
-            species = "Cat",
+            species = "CAT",
             breed = null,
             age = 2,
             owner = "Jane Smith",
@@ -175,7 +188,7 @@ class PetPersistenceAdapterTest {
         val petModel = Pet(
             id = null,
             name = "Buddy",
-            species = "Dog",
+            species = Species.DOG,
             breed = "Golden Retriever",
             age = 3,
             owner = "John Doe",
@@ -204,7 +217,7 @@ class PetPersistenceAdapterTest {
         val petModel = Pet(
             id = null,
             name = "Rex",
-            species = "Dog",
+            species = Species.DOG,
             breed = "", // Empty string
             age = 1,
             owner = "Bob Wilson",
@@ -214,7 +227,7 @@ class PetPersistenceAdapterTest {
         val savedPetData = PetData(
             id = UUID.randomUUID(),
             name = "Rex",
-            species = "Dog",
+            species = "DOG",
             breed = "",
             age = 1,
             owner = "Bob Wilson",
@@ -247,21 +260,29 @@ class PetPersistenceAdapterTest {
         val petModel = Pet(
             id = null,
             name = "Christmas",
-            species = "Cat",
+            species = Species.CAT,
             breed = "Persian",
             age = 1,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Holiday Family",
-            registrationDate = specificDate
+            registrationDate = specificDate,
+            photoUrl = null
         )
 
         val savedPetData = PetData(
             id = UUID.randomUUID(),
             name = "Christmas",
-            species = "Cat",
+            species = "CAT",
             breed = "Persian",
             age = 1,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Holiday Family",
-            registrationDate = specificDate
+            registrationDate = specificDate,
+            photoUrl = null
         )
 
         `when`(petRepository.save(any<PetData>())).thenReturn(Mono.just(savedPetData))
@@ -278,8 +299,66 @@ class PetPersistenceAdapterTest {
 
         val petDataCaptor = argumentCaptor<PetData>()
         verify(petRepository).save(petDataCaptor.capture())
-        
+
         val capturedPetData = petDataCaptor.firstValue
         assertEquals(specificDate, capturedPetData.registrationDate)
+    }
+
+    @Test
+    fun `countByOwner should delegate to repository and return count`() {
+        // Given
+        val userId = "user-123"
+        val expectedCount = 5L
+
+        `when`(petRepository.countByOwner(userId)).thenReturn(Mono.just(expectedCount))
+
+        // When
+        val result = petPersistenceAdapter.countByOwner(userId)
+
+        // Then
+        StepVerifier.create(result)
+            .expectNext(expectedCount)
+            .verifyComplete()
+
+        verify(petRepository).countByOwner(userId)
+    }
+
+    @Test
+    fun `countByOwner should return zero when user has no pets`() {
+        // Given
+        val userId = "user-new"
+
+        `when`(petRepository.countByOwner(userId)).thenReturn(Mono.just(0L))
+
+        // When
+        val result = petPersistenceAdapter.countByOwner(userId)
+
+        // Then
+        StepVerifier.create(result)
+            .expectNext(0L)
+            .verifyComplete()
+
+        verify(petRepository).countByOwner(userId)
+    }
+
+    @Test
+    fun `countByOwner should propagate repository errors`() {
+        // Given
+        val userId = "user-123"
+        val repositoryError = RuntimeException("Database connection failed")
+
+        `when`(petRepository.countByOwner(userId)).thenReturn(Mono.error(repositoryError))
+
+        // When
+        val result = petPersistenceAdapter.countByOwner(userId)
+
+        // Then
+        StepVerifier.create(result)
+            .expectErrorMatches { throwable ->
+                throwable is RuntimeException && throwable.message == "Database connection failed"
+            }
+            .verify()
+
+        verify(petRepository).countByOwner(userId)
     }
 }

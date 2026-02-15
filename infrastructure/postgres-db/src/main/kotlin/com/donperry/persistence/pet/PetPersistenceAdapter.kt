@@ -5,7 +5,6 @@ import com.donperry.model.pet.gateway.PetPersistenceGateway
 import com.donperry.persistence.pet.mapper.PetMapper
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
-import java.util.concurrent.ConcurrentHashMap
 
 @Service
 class PetPersistenceAdapter(
@@ -13,8 +12,11 @@ class PetPersistenceAdapter(
 ) : PetPersistenceGateway {
 
     override fun save(pet: Pet): Mono<Pet> {
-      return petRepository.save(PetMapper.toEntity(pet))
-          .map { PetMapper.toModel(it) }
+        return petRepository.save(PetMapper.toEntity(pet))
+            .map { PetMapper.toModel(it) }
     }
 
+    override fun countByOwner(userId: String): Mono<Long> {
+        return petRepository.countByOwner(userId)
+    }
 }

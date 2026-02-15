@@ -14,6 +14,24 @@ spring:
         - ../../infrastructure/entrypoint-rest/src/main
         - ../../infrastructure/postgres-db/src/main
         - ../../infrastructure/client-rest/src/main
+        - ../../infrastructure/s3-storage/src/main
+
+  codec:
+    max-in-memory-size: 10MB
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI:https://dev-example.auth0.com/}
+          jwk-set-uri: ${JWT_JWK_SET_URI:https://dev-example.auth0.com/.well-known/jwks.json}
+
+aws:
+  s3:
+    bucket-name: ${AWS_S3_BUCKET_NAME:pet-app-photos}
+    region: ${AWS_REGION:us-east-1}
+    access-key-id: ${AWS_ACCESS_KEY_ID:}
+    secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
 
 app:
   security:

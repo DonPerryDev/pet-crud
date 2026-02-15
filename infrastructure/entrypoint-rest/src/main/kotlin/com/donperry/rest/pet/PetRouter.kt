@@ -9,15 +9,13 @@ import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.router
 
 @Configuration
-class PetRouter(
-    petHandler: PetHandler
-) {
+class PetRouter {
 
     @Bean
     fun petRoutes(petHandler: PetHandler): RouterFunction<ServerResponse> {
         return router {
             "/api/pets".nest {
-                accept(MediaType.APPLICATION_JSON).nest {
+                contentType(MediaType.MULTIPART_FORM_DATA).nest {
                     POST("", petHandler::registerPet)
                 }
             }

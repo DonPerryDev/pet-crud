@@ -17,8 +17,12 @@ class PetDataTest {
         val species = "Dog"
         val breed = "Golden Retriever"
         val age = 3
+        val birthdate = LocalDate.of(2020, 5, 15)
+        val weight = java.math.BigDecimal("30.5")
+        val nickname = "Bud"
         val owner = "John Doe"
         val registrationDate = LocalDate.of(2023, 12, 25)
+        val photoUrl = "https://s3.amazonaws.com/pets/buddy.jpg"
 
         // When
         val petData = PetData(
@@ -27,8 +31,12 @@ class PetDataTest {
             species = species,
             breed = breed,
             age = age,
+            birthdate = birthdate,
+            weight = weight,
+            nickname = nickname,
             owner = owner,
-            registrationDate = registrationDate
+            registrationDate = registrationDate,
+            photoUrl = photoUrl
         )
 
         // Then
@@ -37,8 +45,12 @@ class PetDataTest {
         assertEquals(species, petData.species)
         assertEquals(breed, petData.breed)
         assertEquals(age, petData.age)
+        assertEquals(birthdate, petData.birthdate)
+        assertEquals(weight, petData.weight)
+        assertEquals(nickname, petData.nickname)
         assertEquals(owner, petData.owner)
         assertEquals(registrationDate, petData.registrationDate)
+        assertEquals(photoUrl, petData.photoUrl)
     }
 
     @Test
@@ -50,8 +62,12 @@ class PetDataTest {
             species = "Cat",
             breed = "Persian",
             age = 2,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Jane Smith",
-            registrationDate = LocalDate.now()
+            registrationDate = LocalDate.now(),
+            photoUrl = null
         )
 
         // Then
@@ -60,7 +76,11 @@ class PetDataTest {
         assertEquals("Cat", petData.species)
         assertEquals("Persian", petData.breed)
         assertEquals(2, petData.age)
+        assertNull(petData.birthdate)
+        assertNull(petData.weight)
+        assertNull(petData.nickname)
         assertEquals("Jane Smith", petData.owner)
+        assertNull(petData.photoUrl)
     }
 
     @Test
@@ -219,7 +239,7 @@ class PetDataTest {
         // Given
         val id = UUID.randomUUID()
         val registrationDate = LocalDate.of(2023, 11, 20)
-        
+
         val petData = PetData(
             id = id,
             name = "Charlie",
@@ -231,7 +251,7 @@ class PetDataTest {
         )
 
         // When
-        val (dataId, name, species, breed, age, owner, dataRegistrationDate) = petData
+        val (dataId, name, species, breed, age, birthdate, weight, nickname, owner, dataRegistrationDate, photoUrl) = petData
 
         // Then
         assertEquals(id, dataId)
@@ -239,8 +259,12 @@ class PetDataTest {
         assertEquals("Dog", species)
         assertEquals("Labrador", breed)
         assertEquals(4, age)
+        assertNull(birthdate)
+        assertNull(weight)
+        assertNull(nickname)
         assertEquals("Mike Johnson", owner)
         assertEquals(registrationDate, dataRegistrationDate)
+        assertNull(photoUrl)
     }
 
     @Test

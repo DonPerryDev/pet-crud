@@ -1,48 +1,39 @@
 # Current Work
 
-## Active Branch
-`main`
+## User Story: Add a New Pet
 
-## Recent Commits
+**As a** user, **I want to** add a new pet with basic info, **so that** I can start managing its profile.
 
-| Hash | Message |
-|------|---------|
-| `38b8dd9` | feat: enhance AI Development Guide and CLAUDE.md with comprehensive testing practices and commands |
-| `067eb92` | test: init test |
-| `76677f2` | feat: add AI Development Guide and CLAUDE.md for project documentation |
-| `16ddd8a` | fix: update user email endpoint URI in UserAdapter |
-| `0ca79df` | fix: update R2DBC connection details in application.yaml and docker-compose.yml |
-| `91ae8d1` | feat: add docker-compose.yml |
-| `85c0a63` | feat: add devtools |
-| `e100c0d` | feat: add devtools |
-| `508bbfa` | fix: sonnar issues |
-| `77ebce6` | fix: resolve database connection issue |
+### Acceptance Criteria
 
-## Implemented Features
+- **Given** I am logged in, **when** I tap "Add pet" and fill in name and species (required), **then** the pet is created.
+- **Given** I have 10 pets, **when** I try to add another, **then** I see a message that the limit has been reached.
+- **Given** I fill in optional fields (breed, birthdate, weight, nickname, photo), **when** I save, **then** all data is stored.
+- **Given** I submit without a name or species, **when** I try to save, **then** I see validation errors.
 
-### Pet Domain
-- **Pet Model** — `domain/model/src/main/kotlin/com/donperry/model/pet/Pet.kt`
-- **Pet Persistence Gateway** — Interface for pet storage operations
-- **Register Pet Use Case** — Business logic for pet registration
-- **Pet REST Endpoint** — `POST /api/pets` via functional router
-- **Pet Persistence Adapter** — R2DBC implementation with mapper
-- **Pet Repository** — ReactiveCrudRepository for PetData
+### Entity: Pet
 
-### User Domain
-- **User Model** — `domain/model/src/main/kotlin/com/donperry/model/user/User.kt`
-- **User Gateway** — Interface for user lookup by email
-- **User Adapter** — WebClient-based external API client
+### Notes
 
-### Infrastructure
-- **CORS Configuration** — Global CORS config with configurable allowed origins
-- **Security Properties** — Externalized security configuration
-- **Jackson Config** — Kotlin-aware JSON serialization
-- **Docker Compose** — PostgreSQL 15 + application containers
+- Max 10 pets per user in MVP.
+- Species: dog, cat (expandable post-MVP).
+- Photo stored in S3; `photoUrl` saved in Postgres via Pet Service.
+- `userId` is set automatically from the JWT — not user input.
 
-## Module Status
+---
 
-| Module | Models | Gateways | Use Cases | Handlers | Tests |
-|--------|--------|----------|-----------|----------|-------|
-| Pet | Pet | PetPersistenceGateway | RegisterPetUseCase | PetHandler | Yes |
-| User | User | UserGateway | — | — | Yes |
-| Enums | Channels | — | — | — | — |
+## Current Task
+
+### Scope
+
+Implement `POST /pets` in Pet Service (Kotlin/Spring WebFlux).
+
+### Tasks
+
+- [ ] Create endpoint `POST /pets`
+- [ ] Set `userId` from JWT (not from request body)
+- [ ] Validate required fields: `name`, `species`
+- [ ] Validate 10-pet limit per user
+- [ ] Photo upload: accept multipart file, upload to S3 (`pets/` folder), store `photoUrl`
+- [ ] Reject photo files > 5 MB
+- [ ] Return created Pet entity

@@ -1,6 +1,7 @@
 package com.donperry.persistence.pet.mapper
 
 import com.donperry.model.pet.Pet
+import com.donperry.model.pet.Species
 import com.donperry.persistence.pet.entities.PetData
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -15,15 +16,21 @@ class PetMapperTest {
         // Given
         val petId = UUID.randomUUID()
         val registrationDate = LocalDate.of(2023, 12, 25)
-        
+        val birthdate = LocalDate.of(2020, 5, 15)
+        val weight = java.math.BigDecimal("30.5")
+
         val petModel = Pet(
             id = petId.toString(),
             name = "Buddy",
-            species = "Dog",
+            species = Species.DOG,
             breed = "Golden Retriever",
             age = 3,
+            birthdate = birthdate,
+            weight = weight,
+            nickname = "Bud",
             owner = "John Doe",
-            registrationDate = registrationDate
+            registrationDate = registrationDate,
+            photoUrl = "https://s3.amazonaws.com/pets/buddy.jpg"
         )
 
         // When
@@ -32,11 +39,15 @@ class PetMapperTest {
         // Then
         assertEquals(petId, result.id)
         assertEquals("Buddy", result.name)
-        assertEquals("Dog", result.species)
+        assertEquals("DOG", result.species)
         assertEquals("Golden Retriever", result.breed)
         assertEquals(3, result.age)
+        assertEquals(birthdate, result.birthdate)
+        assertEquals(weight, result.weight)
+        assertEquals("Bud", result.nickname)
         assertEquals("John Doe", result.owner)
         assertEquals(registrationDate, result.registrationDate)
+        assertEquals("https://s3.amazonaws.com/pets/buddy.jpg", result.photoUrl)
     }
 
     @Test
@@ -45,11 +56,15 @@ class PetMapperTest {
         val petModel = Pet(
             id = null,
             name = "Mittens",
-            species = "Cat",
+            species = Species.CAT,
             breed = "Persian",
             age = 2,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Jane Smith",
-            registrationDate = LocalDate.now()
+            registrationDate = LocalDate.now(),
+            photoUrl = null
         )
 
         // When
@@ -58,10 +73,14 @@ class PetMapperTest {
         // Then
         assertNull(result.id)
         assertEquals("Mittens", result.name)
-        assertEquals("Cat", result.species)
+        assertEquals("CAT", result.species)
         assertEquals("Persian", result.breed)
         assertEquals(2, result.age)
+        assertNull(result.birthdate)
+        assertNull(result.weight)
+        assertNull(result.nickname)
         assertEquals("Jane Smith", result.owner)
+        assertNull(result.photoUrl)
     }
 
     @Test
@@ -70,7 +89,7 @@ class PetMapperTest {
         val petModel = Pet(
             id = UUID.randomUUID().toString(),
             name = "Rex",
-            species = "Dog",
+            species = Species.DOG,
             breed = null,
             age = 5,
             owner = "Bob Wilson",
@@ -83,7 +102,7 @@ class PetMapperTest {
         // Then
         assertNull(result.breed)
         assertEquals("Rex", result.name)
-        assertEquals("Dog", result.species)
+        assertEquals("DOG", result.species)
         assertEquals(5, result.age)
         assertEquals("Bob Wilson", result.owner)
     }
@@ -94,7 +113,7 @@ class PetMapperTest {
         val petModel = Pet(
             id = UUID.randomUUID().toString(),
             name = "Fluffy",
-            species = "Cat",
+            species = Species.CAT,
             breed = "",
             age = 1,
             owner = "Alice Brown",
@@ -114,15 +133,21 @@ class PetMapperTest {
         // Given
         val petId = UUID.randomUUID()
         val registrationDate = LocalDate.of(2023, 11, 15)
-        
+        val birthdate = LocalDate.of(2019, 3, 10)
+        val weight = java.math.BigDecimal("25.5")
+
         val petData = PetData(
             id = petId,
             name = "Charlie",
-            species = "Dog",
+            species = "DOG",
             breed = "Labrador",
             age = 4,
+            birthdate = birthdate,
+            weight = weight,
+            nickname = "Chuck",
             owner = "Mike Johnson",
-            registrationDate = registrationDate
+            registrationDate = registrationDate,
+            photoUrl = "https://s3.amazonaws.com/pets/charlie.jpg"
         )
 
         // When
@@ -131,11 +156,15 @@ class PetMapperTest {
         // Then
         assertEquals(petId.toString(), result.id)
         assertEquals("Charlie", result.name)
-        assertEquals("Dog", result.species)
+        assertEquals(Species.DOG, result.species)
         assertEquals("Labrador", result.breed)
         assertEquals(4, result.age)
+        assertEquals(birthdate, result.birthdate)
+        assertEquals(weight, result.weight)
+        assertEquals("Chuck", result.nickname)
         assertEquals("Mike Johnson", result.owner)
         assertEquals(registrationDate, result.registrationDate)
+        assertEquals("https://s3.amazonaws.com/pets/charlie.jpg", result.photoUrl)
     }
 
     @Test
@@ -145,11 +174,15 @@ class PetMapperTest {
         val petData = PetData(
             id = petId,
             name = "Whiskers",
-            species = "Cat",
+            species = "CAT",
             breed = null,
             age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Sarah Connor",
-            registrationDate = LocalDate.now()
+            registrationDate = LocalDate.now(),
+            photoUrl = null
         )
 
         // When
@@ -158,8 +191,12 @@ class PetMapperTest {
         // Then
         assertEquals(petId.toString(), result.id)
         assertNull(result.breed)
+        assertNull(result.birthdate)
+        assertNull(result.weight)
+        assertNull(result.nickname)
+        assertNull(result.photoUrl)
         assertEquals("Whiskers", result.name)
-        assertEquals("Cat", result.species)
+        assertEquals(Species.CAT, result.species)
     }
 
     @Test
@@ -169,7 +206,7 @@ class PetMapperTest {
         val petData = PetData(
             id = petId,
             name = "Spot",
-            species = "Dog",
+            species = "DOG",
             breed = "",
             age = 2,
             owner = "Tom Anderson",
@@ -187,14 +224,20 @@ class PetMapperTest {
     @Test
     fun `toModel and toEntity should be bidirectional for complete Pet`() {
         // Given
+        val birthdate = LocalDate.of(2017, 4, 20)
+        val weight = java.math.BigDecimal("20.0")
         val originalPet = Pet(
             id = UUID.randomUUID().toString(),
             name = "Bidirectional",
-            species = "Dog",
+            species = Species.DOG,
             breed = "Mixed",
             age = 6,
+            birthdate = birthdate,
+            weight = weight,
+            nickname = "Bidi",
             owner = "Test Owner",
-            registrationDate = LocalDate.of(2023, 10, 10)
+            registrationDate = LocalDate.of(2023, 10, 10),
+            photoUrl = "https://s3.amazonaws.com/pets/bidi.jpg"
         )
 
         // When
@@ -207,8 +250,12 @@ class PetMapperTest {
         assertEquals(originalPet.species, convertedPet.species)
         assertEquals(originalPet.breed, convertedPet.breed)
         assertEquals(originalPet.age, convertedPet.age)
+        assertEquals(originalPet.birthdate, convertedPet.birthdate)
+        assertEquals(originalPet.weight, convertedPet.weight)
+        assertEquals(originalPet.nickname, convertedPet.nickname)
         assertEquals(originalPet.owner, convertedPet.owner)
         assertEquals(originalPet.registrationDate, convertedPet.registrationDate)
+        assertEquals(originalPet.photoUrl, convertedPet.photoUrl)
     }
 
     @Test
@@ -217,11 +264,15 @@ class PetMapperTest {
         val originalPet = Pet(
             id = null,
             name = "NullTest",
-            species = "Cat",
+            species = Species.CAT,
             breed = null,
             age = 1,
+            birthdate = null,
+            weight = null,
+            nickname = null,
             owner = "Null Owner",
-            registrationDate = LocalDate.now()
+            registrationDate = LocalDate.now(),
+            photoUrl = null
         )
 
         // When
@@ -234,6 +285,10 @@ class PetMapperTest {
         assertEquals(originalPet.name, convertedPet.name)
         assertEquals(originalPet.species, convertedPet.species)
         assertNull(convertedPet.breed)
+        assertNull(convertedPet.birthdate)
+        assertNull(convertedPet.weight)
+        assertNull(convertedPet.nickname)
+        assertNull(convertedPet.photoUrl)
         assertEquals(originalPet.age, convertedPet.age)
         assertEquals(originalPet.owner, convertedPet.owner)
         assertEquals(originalPet.registrationDate, convertedPet.registrationDate)
@@ -245,7 +300,7 @@ class PetMapperTest {
         val petModel = Pet(
             id = UUID.randomUUID().toString(),
             name = "NewBorn",
-            species = "Cat",
+            species = Species.CAT,
             breed = "Siamese",
             age = 0,
             owner = "First Time Owner",
@@ -265,7 +320,7 @@ class PetMapperTest {
         val petData = PetData(
             id = UUID.randomUUID(),
             name = "Baby",
-            species = "Dog",
+            species = "DOG",
             breed = "Puppy",
             age = 0,
             owner = "New Parent",

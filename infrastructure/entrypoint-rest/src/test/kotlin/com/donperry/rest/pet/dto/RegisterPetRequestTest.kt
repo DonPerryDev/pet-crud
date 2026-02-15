@@ -1,6 +1,8 @@
 package com.donperry.rest.pet.dto
 
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
+import java.time.LocalDate
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
@@ -15,7 +17,9 @@ class RegisterPetRequestTest {
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
-            owner = "John Doe"
+            birthdate = null,
+            weight = null,
+            nickname = null
         )
 
         // Then
@@ -23,7 +27,9 @@ class RegisterPetRequestTest {
         assertEquals("Dog", request.species)
         assertEquals("Golden Retriever", request.breed)
         assertEquals(3, request.age)
-        assertEquals("John Doe", request.owner)
+        assertNull(request.birthdate)
+        assertNull(request.weight)
+        assertNull(request.nickname)
     }
 
     @Test
@@ -34,7 +40,9 @@ class RegisterPetRequestTest {
             species = "Cat",
             breed = null,
             age = 2,
-            owner = "Jane Smith"
+            birthdate = null,
+            weight = null,
+            nickname = null
         )
 
         // Then
@@ -42,7 +50,9 @@ class RegisterPetRequestTest {
         assertEquals("Cat", request.species)
         assertNull(request.breed)
         assertEquals(2, request.age)
-        assertEquals("Jane Smith", request.owner)
+        assertNull(request.birthdate)
+        assertNull(request.weight)
+        assertNull(request.nickname)
     }
 
     @Test
@@ -53,7 +63,9 @@ class RegisterPetRequestTest {
             species = "Dog",
             breed = "",
             age = 5,
-            owner = "Bob Wilson"
+            birthdate = null,
+            weight = null,
+            nickname = null
         )
 
         // Then
@@ -61,7 +73,9 @@ class RegisterPetRequestTest {
         assertEquals("Dog", request.species)
         assertEquals("", request.breed)
         assertEquals(5, request.age)
-        assertEquals("Bob Wilson", request.owner)
+        assertNull(request.birthdate)
+        assertNull(request.weight)
+        assertNull(request.nickname)
     }
 
     @Test
@@ -69,18 +83,22 @@ class RegisterPetRequestTest {
         // When
         val request = RegisterPetRequest(
             name = "NewBorn",
-            species = "Hamster",
+            species = "Dog",
             breed = "Syrian",
             age = 0,
-            owner = "Pet Store"
+            birthdate = null,
+            weight = null,
+            nickname = null
         )
 
         // Then
         assertEquals("NewBorn", request.name)
-        assertEquals("Hamster", request.species)
+        assertEquals("Dog", request.species)
         assertEquals("Syrian", request.breed)
         assertEquals(0, request.age)
-        assertEquals("Pet Store", request.owner)
+        assertNull(request.birthdate)
+        assertNull(request.weight)
+        assertNull(request.nickname)
     }
 
     @Test
@@ -91,15 +109,19 @@ class RegisterPetRequestTest {
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
-            owner = "John Doe"
+            birthdate = null,
+            weight = null,
+            nickname = null
         )
-        
+
         val request2 = RegisterPetRequest(
             name = "Buddy",
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
-            owner = "John Doe"
+            birthdate = null,
+            weight = null,
+            nickname = null
         )
 
         // Then
@@ -115,15 +137,19 @@ class RegisterPetRequestTest {
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
-            owner = "John Doe"
+            birthdate = null,
+            weight = null,
+            nickname = null
         )
-        
+
         val request2 = RegisterPetRequest(
             name = "Mittens",
             species = "Cat",
             breed = "Persian",
             age = 2,
-            owner = "Jane Smith"
+            birthdate = null,
+            weight = null,
+            nickname = null
         )
 
         // Then
@@ -139,18 +165,22 @@ class RegisterPetRequestTest {
             species = "Dog",
             breed = "Labrador",
             age = 4,
-            owner = "Mike Johnson"
+            birthdate = LocalDate.of(2020, 1, 1),
+            weight = BigDecimal("25.5"),
+            nickname = "Chuck"
         )
 
         // When
-        val (name, species, breed, age, owner) = request
+        val (name, species, breed, age, birthdate, weight, nickname) = request
 
         // Then
         assertEquals("Charlie", name)
         assertEquals("Dog", species)
         assertEquals("Labrador", breed)
         assertEquals(4, age)
-        assertEquals("Mike Johnson", owner)
+        assertEquals(LocalDate.of(2020, 1, 1), birthdate)
+        assertEquals(BigDecimal("25.5"), weight)
+        assertEquals("Chuck", nickname)
     }
 
     @Test
@@ -161,18 +191,20 @@ class RegisterPetRequestTest {
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
-            owner = "John Doe"
+            birthdate = null,
+            weight = null,
+            nickname = null
         )
 
         // When
-        val copiedRequest = originalRequest.copy(age = 4, owner = "Jane Doe")
+        val copiedRequest = originalRequest.copy(age = 4, nickname = "Bud")
 
         // Then
         assertEquals(originalRequest.name, copiedRequest.name)
         assertEquals(originalRequest.species, copiedRequest.species)
         assertEquals(originalRequest.breed, copiedRequest.breed)
         assertEquals(4, copiedRequest.age) // Changed
-        assertEquals("Jane Doe", copiedRequest.owner) // Changed
+        assertEquals("Bud", copiedRequest.nickname) // Changed
     }
 
     @Test
@@ -183,7 +215,9 @@ class RegisterPetRequestTest {
             species = "Dog",
             breed = "Golden Retriever",
             age = 3,
-            owner = "John Doe"
+            birthdate = LocalDate.of(2020, 5, 15),
+            weight = BigDecimal("30.0"),
+            nickname = "Bud"
         )
 
         // When
@@ -194,7 +228,9 @@ class RegisterPetRequestTest {
         assert(toStringResult.contains("Dog"))
         assert(toStringResult.contains("Golden Retriever"))
         assert(toStringResult.contains("3"))
-        assert(toStringResult.contains("John Doe"))
+        assert(toStringResult.contains("2020-05-15"))
+        assert(toStringResult.contains("30.0"))
+        assert(toStringResult.contains("Bud"))
     }
 
     @Test
@@ -205,7 +241,9 @@ class RegisterPetRequestTest {
             species = "Cat",
             breed = "Maine Coon",
             age = 7,
-            owner = "María José González"
+            birthdate = null,
+            weight = null,
+            nickname = "Señor"
         )
 
         // Then
@@ -213,7 +251,7 @@ class RegisterPetRequestTest {
         assertEquals("Cat", request.species)
         assertEquals("Maine Coon", request.breed)
         assertEquals(7, request.age)
-        assertEquals("María José González", request.owner)
+        assertEquals("Señor", request.nickname)
     }
 
     @Test
@@ -221,7 +259,6 @@ class RegisterPetRequestTest {
         // Given
         val longName = "A".repeat(100)
         val longBreed = "B".repeat(200)
-        val longOwner = "C".repeat(150)
 
         // When
         val request = RegisterPetRequest(
@@ -229,7 +266,9 @@ class RegisterPetRequestTest {
             species = "Dog",
             breed = longBreed,
             age = 1,
-            owner = longOwner
+            birthdate = null,
+            weight = null,
+            nickname = null
         )
 
         // Then
@@ -237,6 +276,28 @@ class RegisterPetRequestTest {
         assertEquals("Dog", request.species)
         assertEquals(longBreed, request.breed)
         assertEquals(1, request.age)
-        assertEquals(longOwner, request.owner)
+    }
+
+    @Test
+    fun `RegisterPetRequest should handle new optional fields`() {
+        // When
+        val request = RegisterPetRequest(
+            name = "Max",
+            species = "Dog",
+            breed = "Beagle",
+            age = 2,
+            birthdate = LocalDate.of(2022, 3, 10),
+            weight = BigDecimal("15.7"),
+            nickname = "Maxie"
+        )
+
+        // Then
+        assertEquals("Max", request.name)
+        assertEquals("Dog", request.species)
+        assertEquals("Beagle", request.breed)
+        assertEquals(2, request.age)
+        assertEquals(LocalDate.of(2022, 3, 10), request.birthdate)
+        assertEquals(BigDecimal("15.7"), request.weight)
+        assertEquals("Maxie", request.nickname)
     }
 }

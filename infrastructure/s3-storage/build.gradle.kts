@@ -1,0 +1,14 @@
+object Versions {
+    const val awsSdk = "2.20.0"
+}
+
+dependencies {
+    implementation(project(":model"))
+    implementation("org.springframework:spring-context")
+    implementation("org.springframework.boot:spring-boot-starter")
+
+    // AWS SDK v2
+    implementation(platform("software.amazon.awssdk:bom:${Versions.awsSdk}"))
+    implementation("software.amazon.awssdk:s3")
+    implementation("software.amazon.awssdk:netty-nio-client")
+}

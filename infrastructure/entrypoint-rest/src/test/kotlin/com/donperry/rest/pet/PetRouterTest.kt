@@ -1,6 +1,5 @@
 package com.donperry.rest.pet
 
-import com.donperry.rest.pet.dto.RegisterPetRequest
 import com.donperry.rest.pet.handler.PetHandler
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,64 +23,27 @@ class PetRouterTest {
 
     @BeforeEach
     fun setUp() {
-        petRouter = PetRouter(petHandler)
+        petRouter = PetRouter()
         val routerFunction = petRouter.petRoutes(petHandler)
         webTestClient = WebTestClient.bindToRouterFunction(routerFunction).build()
     }
 
     @Test
-    fun `POST api pets should route to register pet handler`() {
-        // Given
-        val request = RegisterPetRequest(
-            name = "Buddy",
-            species = "Dog",
-            breed = "Golden Retriever",
-            age = 3,
-            owner = "John Doe"
-        )
-        
+    fun `POST api pets route should be configured`() {
         `when`(petHandler.registerPet(org.mockito.kotlin.any())).thenReturn(
             ServerResponse.ok().build()
         )
 
-        // When & Then
         webTestClient
             .post()
             .uri("/api/pets")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(request)
-            .exchange()
-            .expectStatus().isOk
-    }
-
-    @Test
-    fun `POST api pets with JSON content type should work correctly`() {
-        // Given
-        val request = RegisterPetRequest(
-            name = "Buddy",
-            species = "Dog", 
-            breed = "Golden Retriever",
-            age = 3,
-            owner = "John Doe"
-        )
-        
-        `when`(petHandler.registerPet(org.mockito.kotlin.any())).thenReturn(
-            ServerResponse.ok().build()
-        )
-
-        // When & Then
-        webTestClient
-            .post()
-            .uri("/api/pets")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(request)
+            .contentType(MediaType.MULTIPART_FORM_DATA)
             .exchange()
             .expectStatus().isOk
     }
 
     @Test
     fun `GET api pets should return 404 for non-configured routes`() {
-        // When & Then
         webTestClient
             .get()
             .uri("/api/pets")
@@ -91,21 +53,9 @@ class PetRouterTest {
 
     @Test
     fun `POST without api pets prefix should return 404`() {
-        // Given
-        val request = RegisterPetRequest(
-            name = "Buddy",
-            species = "Dog",
-            breed = "Golden Retriever",
-            age = 3,
-            owner = "John Doe"
-        )
-
-        // When & Then
         webTestClient
             .post()
             .uri("/pets")
-            .contentType(MediaType.APPLICATION_JSON)
-            .bodyValue(request)
             .exchange()
             .expectStatus().isNotFound
     }

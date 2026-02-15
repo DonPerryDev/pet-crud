@@ -23,3 +23,6 @@ project(":persistence").projectDir = file("./infrastructure/postgres-db")
 
 include(":client-rest")
 project(":client-rest").projectDir = file("./infrastructure/client-rest")
+
+include(":s3-storage")
+project(":s3-storage").projectDir = file("./infrastructure/s3-storage")
