@@ -13,35 +13,51 @@
 | `R2DBC_URL` | Database connection | `r2dbc:postgresql://localhost:5435/local?currentSchema=petapp` |
 | `R2DBC_USERNAME` | Database user | `petapp` |
 | `R2DBC_PASSWORD` | Database password | `petapp123` |
+| `JWT_ISSUER_URI` | JWT token issuer | `https://dev-example.auth0.com/` |
+| `JWT_JWK_SET_URI` | JWK Set endpoint | `https://dev-example.auth0.com/.well-known/jwks.json` |
+| `AWS_S3_BUCKET_NAME` | S3 bucket for photos | `pet-app-photos` |
+| `AWS_REGION` | AWS region | `us-east-1` |
+| `AWS_ACCESS_KEY_ID` | AWS access key | (empty, required in production) |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret key | (empty, required in production) |
 | `ALLOWED_ORIGINS` | CORS allowed origins | `http://localhost:3000,http://localhost:3005` |
 | `MANAGEMENT_PORT` | Actuator port | `9090` |
 
 ## Input Validation
 
-### Current State
-- Request DTOs use Kotlin data classes with non-nullable fields for required values
-- Nullable fields (`String?`) for optional values
-- No Jakarta validation annotations detected yet
-
-### Recommended Pattern
-```kotlin
-data class {Action}{Entity}Request(
-    @field:NotBlank(message = "Name is required")
-    val name: String,
-
-    @field:Min(value = 0, message = "Age must be non-negative")
-    val age: Int,
-
-    val optional: String? = null
-)
-```
+### Current Implementation
+- Business validation performed in use case layer (see `RegisterPetUseCase`)
+- Validations:
+  - User ID: cannot be blank
+  - Pet name: cannot be blank
+  - Age: must be >= 0
+  - Weight: must be > 0 if provided
+  - Birthdate: cannot be in the future
+  - Photo size: max 5 MB
+  - Pet limit: max 10 pets per user
+- Domain exceptions thrown for validation failures (see `model/exception/DomainException.kt`):
+  - `ValidationException`
+  - `PetLimitExceededException`
+  - `PhotoSizeExceededException`
+  - `UnauthorizedException`
+  - `PhotoUploadException`
 
 ## Authentication & Authorization
 
-> **TODO:** No authentication mechanism detected. When implementing:
-> - Consider JWT validation in a WebFilter
-> - Extract user identity from token
-> - Apply role-based access control per route
+### Current Implementation
+- **Framework:** Spring Security OAuth2 Resource Server with JWT
+- **Config class:** `SecurityConfig.kt` in `applications/pet/src/main/kotlin/com/donperry/app/configuration/`
+- **Protected endpoints:**
+  - `POST /api/pets` — Requires valid JWT token (`.authenticated()`)
+- **Public endpoints:**
+  - `/management/**` — Health checks and actuator endpoints
+- **User extraction:** `ReactiveSecurityContextHolder.getContext().authentication.name` provides user ID
+- **Token validation:** Automatic via Spring Security using JWK Set from `JWT_JWK_SET_URI`
+
+### Security Rules
+- All `/api/pets` endpoints require authentication
+- Management endpoints are publicly accessible
+- CSRF is disabled (stateless API)
+- User ID is extracted from JWT, not from request body
 
 ## Secrets Handling
 

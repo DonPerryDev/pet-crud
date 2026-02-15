@@ -12,20 +12,56 @@
 
 **Router:** `PetRouter.kt` — `infrastructure/entrypoint-rest/src/main/kotlin/com/donperry/rest/pet/PetRouter.kt`
 **Handler:** `PetHandler.kt` — `infrastructure/entrypoint-rest/src/main/kotlin/com/donperry/rest/pet/handler/PetHandler.kt`
+**Authentication:** Required (JWT Bearer token)
+**Content-Type:** `multipart/form-data`
 
-**Request Body:**
+**Request Parts:**
+- `pet` (required): JSON with pet data
+  ```json
+  {
+    "name": "string",
+    "species": "DOG | CAT",
+    "breed": "string | null",
+    "age": "int",
+    "birthdate": "YYYY-MM-DD | null",
+    "weight": "decimal | null",
+    "nickname": "string | null"
+  }
+  ```
+- `photo` (optional): Image file (max 5 MB)
+
+**Success Response:** `201 Created`
 ```json
 {
+  "id": "string",
   "name": "string",
-  "species": "string",
+  "species": "DOG | CAT",
   "breed": "string | null",
   "age": "int",
-  "owner": "string"
+  "birthdate": "YYYY-MM-DD | null",
+  "weight": "decimal | null",
+  "nickname": "string | null",
+  "owner": "string",
+  "registrationDate": "YYYY-MM-DD",
+  "photoUrl": "string | null"
 }
 ```
 
-**Success Response:** `200 OK` (empty body)
-**Error Response:** `400 Bad Request` (empty body)
+**Error Responses:**
+- `400 Bad Request` — Validation errors (invalid species, blank name, negative age, future birthdate, invalid weight)
+- `401 Unauthorized` — Missing or invalid JWT token
+- `409 Conflict` — Pet limit exceeded (max 10 pets per user)
+- `413 Payload Too Large` — Photo exceeds 5 MB
+- `500 Internal Server Error` — S3 upload failure or database error
+
+**Error Response Format:**
+```json
+{
+  "error": "VALIDATION_ERROR | PET_LIMIT_EXCEEDED | PHOTO_SIZE_EXCEEDED | UNAUTHORIZED | PHOTO_UPLOAD_FAILED | INTERNAL_ERROR",
+  "message": "Detailed error message",
+  "timestamp": "ISO-8601 timestamp"
+}
+```
 
 ## Management Endpoints
 

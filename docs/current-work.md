@@ -30,10 +30,27 @@ Implement `POST /pets` in Pet Service (Kotlin/Spring WebFlux).
 
 ### Tasks
 
-- [ ] Create endpoint `POST /pets`
-- [ ] Set `userId` from JWT (not from request body)
-- [ ] Validate required fields: `name`, `species`
-- [ ] Validate 10-pet limit per user
-- [ ] Photo upload: accept multipart file, upload to S3 (`pets/` folder), store `photoUrl`
-- [ ] Reject photo files > 5 MB
-- [ ] Return created Pet entity
+- [x] Create endpoint `POST /pets`
+- [x] Set `userId` from JWT (not from request body)
+- [x] Validate required fields: `name`, `species`
+- [x] Validate 10-pet limit per user
+- [x] Photo upload: accept multipart file, upload to S3 (`pets/` folder), store `photoUrl`
+- [x] Reject photo files > 5 MB
+- [x] Return created Pet entity
+
+### Implementation Summary
+
+All acceptance criteria have been implemented:
+- `POST /api/pets` endpoint created with JWT authentication
+- Multipart form data support (pet JSON + optional photo)
+- Species enum (DOG, CAT) with validation
+- Full validation suite in `RegisterPetUseCase`:
+  - Name, species (required)
+  - Age >= 0
+  - Weight > 0 (if provided)
+  - Birthdate not in future (if provided)
+  - Photo <= 5 MB
+  - Pet limit: 10 per user
+- S3 photo storage integration via `PhotoStorageGateway`
+- Error responses with proper HTTP status codes and error codes
+- Database schema includes all optional fields (birthdate, weight, nickname, photo_url)

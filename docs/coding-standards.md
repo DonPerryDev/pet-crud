@@ -20,8 +20,12 @@
 ```
 com.donperry.model.{entity}/
 ├── {Entity}.kt              # data class, no annotations
+├── {Enum}.kt                # enum classes (e.g., Species)
 ├── gateway/
-│   └── {Entity}Gateway.kt   # interface, Mono/Flux return types
+│   ├── {Entity}PersistenceGateway.kt   # interface, Mono/Flux return types
+│   └── {Service}Gateway.kt              # interface for external services
+├── exception/
+│   └── DomainException.kt   # sealed class + specific exceptions
 ```
 
 ### Domain UseCase (`domain/usecase/`)
@@ -39,6 +43,9 @@ com.donperry.rest.{entity}/
 ├── dto/
 │   ├── {Action}{Entity}Request.kt   # data class
 │   └── {Entity}Response.kt          # data class
+├── common/
+│   └── dto/
+│       └── ErrorResponse.kt        # shared error response DTO
 ```
 
 ### Persistence (`infrastructure/postgres-db/`)
@@ -60,6 +67,14 @@ com.donperry.client.rest.{entity}/
 │   └── {Entity}Data.kt             # external API response model
 ├── mapper/
 │   └── {Entity}Mapper.kt           # object with mapping functions
+```
+
+### S3 Storage (`infrastructure/s3-storage/`)
+```
+com.donperry.storage.{type}/
+├── S3{Type}StorageAdapter.kt       # @Service, implements gateway
+├── S3ClientConfig.kt               # @Configuration, S3Client bean
+└── S3Properties.kt                 # @ConfigurationProperties
 ```
 
 ## Reactive Patterns

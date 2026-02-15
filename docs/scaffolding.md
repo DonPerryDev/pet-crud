@@ -13,9 +13,30 @@ Code templates for creating new features. Replace placeholders:
 ```kotlin
 package com.donperry.model.{entity}
 
+import java.time.LocalDate
+
 data class {Entity}(
     val id: String? = null,
-    // fields
+    val name: String,
+    // Add other required fields
+    val createdDate: LocalDate = LocalDate.now()
+)
+```
+
+**Example (Pet):**
+```kotlin
+data class Pet(
+    val id: String? = null,
+    val name: String,
+    val species: Species,
+    val breed: String?,
+    val age: Int,
+    val birthdate: LocalDate? = null,
+    val weight: BigDecimal? = null,
+    val nickname: String? = null,
+    val owner: String,
+    val registrationDate: LocalDate,
+    val photoUrl: String? = null
 )
 ```
 
@@ -27,11 +48,43 @@ data class {Entity}(
 package com.donperry.model.{entity}.gateway
 
 import com.donperry.model.{entity}.{Entity}
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 interface {Entity}PersistenceGateway {
     fun save({entity}: {Entity}): Mono<{Entity}>
     fun findById(id: String): Mono<{Entity}>
+    fun findAll(): Flux<{Entity}>
+    fun deleteById(id: String): Mono<Void>
+}
+```
+
+**Example (PetPersistenceGateway):**
+```kotlin
+interface PetPersistenceGateway {
+    fun save(pet: Pet): Mono<Pet>
+    fun findById(id: String): Mono<Pet>
+    fun countByOwner(owner: String): Mono<Long>
+}
+```
+
+**For S3 Storage:**
+**File:** `domain/model/src/main/kotlin/com/donperry/model/{entity}/gateway/{Type}StorageGateway.kt`
+
+```kotlin
+package com.donperry.model.{entity}.gateway
+
+import reactor.core.publisher.Mono
+
+interface PhotoStorageGateway {
+    fun uploadPhoto(
+        userId: String,
+        petId: String,
+        fileName: String,
+        contentType: String,
+        fileSize: Long,
+        fileBytes: ByteArray
+    ): Mono<String>
 }
 ```
 
@@ -168,12 +221,49 @@ class {Entity}Router {
 package com.donperry.persistence.{entity}.entities
 
 import org.springframework.data.annotation.Id
+import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
+import java.time.LocalDate
+import java.util.UUID
 
-@Table("{entity}s")
+@Table(name = "{entity}s")
 data class {Entity}Data(
-    @Id val id: String? = null,
-    // fields matching database columns
+    @Id
+    val id: UUID? = null,
+    @Column("name")
+    val name: String,
+    // Add @Column for each field matching snake_case DB columns
+    @Column("created_date")
+    val createdDate: LocalDate
+)
+```
+
+**Example (PetData):**
+```kotlin
+@Table(name = "pets")
+data class PetData(
+    @Id
+    val id: UUID? = null,
+    @Column("name")
+    val name: String,
+    @Column("species")
+    val species: String,
+    @Column("breed")
+    val breed: String? = null,
+    @Column("age")
+    val age: Int,
+    @Column("birthdate")
+    val birthdate: LocalDate? = null,
+    @Column("weight")
+    val weight: BigDecimal? = null,
+    @Column("nickname")
+    val nickname: String? = null,
+    @Column("owner")
+    val owner: String,
+    @Column("registration_date")
+    val registrationDate: LocalDate,
+    @Column("photo_url")
+    val photoUrl: String? = null
 )
 ```
 
@@ -243,6 +333,70 @@ class {Entity}PersistenceAdapter(
 }
 ```
 
-## 12. Wiring Config (if new use case)
+## 12. Domain Exceptions
+
+**File:** `domain/model/src/main/kotlin/com/donperry/model/exception/DomainException.kt`
+
+```kotlin
+package com.donperry.model.exception
+
+sealed class DomainException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
+class ValidationException(message: String) : DomainException(message)
+
+class {Entity}NotFoundException(id: String) : DomainException("{Entity} not found: $id")
+
+class {Operation}Exception(message: String, cause: Throwable? = null) : DomainException(message, cause)
+```
+
+**Example (Pet exceptions):**
+```kotlin
+class PetLimitExceededException(userId: String) :
+    DomainException("User $userId has reached the maximum limit of 10 pets")
+
+class PhotoSizeExceededException(actualSize: Long, maxSize: Long) :
+    DomainException("Photo size $actualSize bytes exceeds maximum allowed size of $maxSize bytes")
+
+class PhotoUploadException(message: String, cause: Throwable? = null) :
+    DomainException(message, cause)
+```
+
+## 13. Error Response DTO
+
+**File:** `infrastructure/entrypoint-rest/src/main/kotlin/com/donperry/rest/common/dto/ErrorResponse.kt`
+
+```kotlin
+package com.donperry.rest.common.dto
+
+data class ErrorResponse(
+    val error: String,
+    val message: String,
+    val timestamp: String
+)
+```
+
+**Handler error mapping pattern:**
+```kotlin
+private fun handleError(throwable: Throwable): Mono<ServerResponse> {
+    return when (throwable) {
+        is ValidationException -> buildErrorResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", throwable)
+        is {Entity}NotFoundException -> buildErrorResponse(HttpStatus.NOT_FOUND, "NOT_FOUND", throwable)
+        else -> buildErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR", throwable)
+    }
+}
+
+private fun buildErrorResponse(status: HttpStatus, error: String, throwable: Throwable): Mono<ServerResponse> {
+    val errorResponse = ErrorResponse(
+        error = error,
+        message = throwable.message ?: status.reasonPhrase,
+        timestamp = Instant.now().toString()
+    )
+    return ServerResponse.status(status)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(errorResponse)
+}
+```
+
+## 14. Wiring Config
 
 Use cases matching `^.+UseCase$` are auto-scanned by `UseCasesConfig.kt`. No additional wiring needed unless the use case class name doesn't end with `UseCase`.

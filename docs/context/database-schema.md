@@ -9,21 +9,24 @@
 
 ## Current Tables
 
-### pets (inferred from PetData entity)
+### pets
 
 | Column | Type | Nullable | Description |
 |--------|------|----------|-------------|
-| id | String | No (auto) | Primary key |
-| name | String | No | Pet name |
-| species | String | No | Animal species |
-| breed | String | Yes | Breed (null for mixed) |
-| age | Int | No | Pet age |
-| owner | String | No | Owner identifier |
-| registration_date | LocalDate | No | Date of registration |
+| id | UUID | No (auto) | Primary key |
+| name | VARCHAR | No | Pet name |
+| species | VARCHAR | No | Animal species (DOG, CAT) |
+| breed | VARCHAR | Yes | Breed (null for mixed) |
+| age | INT | No | Pet age in years |
+| birthdate | DATE | Yes | Pet birthdate |
+| weight | DECIMAL(10,2) | Yes | Pet weight |
+| nickname | VARCHAR(255) | Yes | Pet nickname |
+| owner | VARCHAR | No | Owner user ID (from JWT) |
+| registration_date | DATE | No | Date of registration |
+| photo_url | VARCHAR(500) | Yes | S3 URL for pet photo |
 
 **Entity class:** `infrastructure/postgres-db/src/main/kotlin/com/donperry/persistence/pet/entities/PetData.kt`
-
-> **Note:** Verify this schema against the actual database. The above is inferred from the domain model and entity classes.
+**Migrations:** `infrastructure/postgres-db/src/main/resources/db/migration/V2__add_pet_fields.sql`
 
 ## Schema Template
 
@@ -55,4 +58,7 @@ interface {Entity}Repository : ReactiveCrudRepository<{Entity}Data, String> {
 
 ### Migrations
 
-> **TODO:** Document the migration strategy for this project (Flyway, Liquibase, or manual SQL scripts).
+Located in `infrastructure/postgres-db/src/main/resources/db/migration/`:
+- `V2__add_pet_fields.sql` — Added birthdate, weight, nickname, photo_url to pets table
+
+Migration strategy: SQL scripts in `db/migration/` directory (convention-based versioning).
