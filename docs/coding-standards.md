@@ -77,6 +77,44 @@ com.donperry.storage.{type}/
 └── S3Properties.kt                 # @ConfigurationProperties
 ```
 
+## Handler Validation Pattern
+
+Handlers must **never** contain imperative `if`/`return@flatMap Mono.error` validation blocks. Use the `Validated<T>` sealed class with `validate()` extension functions on request DTOs.
+
+**Location:** `rest/common/validation/Validated.kt`
+
+```kotlin
+sealed class Validated<out T> {
+    data class Valid<T>(val value: T) : Validated<T>()
+    data class Invalid(val error: String) : Validated<Nothing>()
+}
+```
+
+Each request DTO defines a `validate()` extension that converts to a domain command or returns an error:
+
+```kotlin
+fun RegisterPetRequest.validate(userId: String): Validated<RegisterPetCommand> {
+    val error = when {
+        name.isBlank() -> "Pet name cannot be blank"
+        species.isBlank() -> "Pet species cannot be blank"
+        else -> null
+    }
+    if (error != null) return Validated.Invalid(error)
+    return Validated.Valid(RegisterPetCommand(userId, name, ...))
+}
+```
+
+Handlers dispatch with a `when` expression:
+
+```kotlin
+.flatMap { req ->
+    when (val result = req.validate(userId)) {
+        is Validated.Invalid -> Mono.error(ValidationException(result.error))
+        is Validated.Valid -> useCase.execute(result.value)
+    }
+}
+```
+
 ## Reactive Patterns
 
 ### Return Types

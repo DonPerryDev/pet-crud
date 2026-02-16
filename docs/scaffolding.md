@@ -113,16 +113,29 @@ class {Action}{Entity}UseCase(
 }
 ```
 
-## 4. Request DTO
+## 4. Request DTO with Validation
 
 **File:** `infrastructure/entrypoint-rest/src/main/kotlin/com/donperry/rest/{entity}/dto/{Action}{Entity}Request.kt`
 
 ```kotlin
 package com.donperry.rest.{entity}.dto
 
+import com.donperry.model.{entity}.{Action}{Entity}Command
+import com.donperry.rest.common.validation.Validated
+
 data class {Action}{Entity}Request(
     // fields matching API contract
 )
+
+fun {Action}{Entity}Request.validate(userId: String): Validated<{Action}{Entity}Command> {
+    val error = when {
+        // field.isBlank() -> "Field cannot be blank"
+        else -> null
+    }
+    if (error != null) return Validated.Invalid(error)
+
+    return Validated.Valid({Action}{Entity}Command(userId, /* map fields */))
+}
 ```
 
 ## 5. Response DTO
@@ -145,7 +158,10 @@ data class {Entity}Response(
 ```kotlin
 package com.donperry.rest.{entity}.handler
 
+import com.donperry.model.exception.ValidationException
+import com.donperry.rest.common.validation.Validated
 import com.donperry.rest.{entity}.dto.{Action}{Entity}Request
+import com.donperry.rest.{entity}.dto.validate
 import com.donperry.usecase.{entity}.{Action}{Entity}UseCase
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -163,16 +179,19 @@ class {Entity}Handler(
 
     fun {action}{Entity}(request: ServerRequest): Mono<ServerResponse> {
         logger.info("Received {action} {entity} request")
-        return request
-            .bodyToMono({Action}{Entity}Request::class.java)
+        return Mono.defer {
+            val userId = extractUserId(request)
+
+            request.bodyToMono({Action}{Entity}Request::class.java)
             .flatMap { req ->
-                {action}{Entity}UseCase.execute(/* map req fields */)
+                when (val result = req.validate(userId)) {
+                    is Validated.Invalid -> Mono.error(ValidationException(result.error))
+                    is Validated.Valid -> {action}{Entity}UseCase.execute(result.value)
+                        .flatMap { ServerResponse.ok().bodyValue(it) }
+                }
             }
-            .flatMap { ServerResponse.ok().bodyValue(it) }
-            .onErrorResume { throwable ->
-                logger.warning("Error during {action} {entity}: ${throwable.message}")
-                ServerResponse.badRequest().build()
-            }
+        }
+            .onErrorResume { throwable -> handleError(throwable) }
     }
 }
 ```

@@ -7,16 +7,14 @@ import com.donperry.model.exception.PhotoSizeExceededException
 import com.donperry.model.exception.PhotoUploadException
 import com.donperry.model.exception.UnauthorizedException
 import com.donperry.model.exception.ValidationException
-import com.donperry.model.pet.ConfirmAvatarUploadCommand
-import com.donperry.model.pet.GeneratePresignedUrlCommand
-import com.donperry.model.pet.RegisterPetCommand
-import com.donperry.model.pet.Species
 import com.donperry.rest.common.dto.ErrorResponse
+import com.donperry.rest.common.validation.Validated
 import com.donperry.rest.pet.dto.ConfirmAvatarUploadRequest
 import com.donperry.rest.pet.dto.GeneratePresignedUrlRequest
 import com.donperry.rest.pet.dto.PetResponse
 import com.donperry.rest.pet.dto.PresignedUrlResponse
 import com.donperry.rest.pet.dto.RegisterPetRequest
+import com.donperry.rest.pet.dto.validate
 import com.donperry.usecase.pet.ConfirmAvatarUploadUseCase
 import com.donperry.usecase.pet.GenerateAvatarPresignedUrlUseCase
 import com.donperry.usecase.pet.RegisterPetUseCase
@@ -48,50 +46,11 @@ class PetHandler(
 
             request.bodyToMono(RegisterPetRequest::class.java)
             .flatMap { petRequest ->
-                if (petRequest.name.isBlank()) {
-                    return@flatMap Mono.error<ServerResponse>(
-                        ValidationException("Pet name cannot be blank")
-                    )
+                when (val result = petRequest.validate(userId)) {
+                    is Validated.Invalid -> Mono.error(ValidationException(result.error))
+                    is Validated.Valid -> registerPetUseCase.execute(result.value)
+                        .flatMap { pet -> buildCreatedResponse(pet) }
                 }
-                if (petRequest.species.isBlank()) {
-                    return@flatMap Mono.error<ServerResponse>(
-                        ValidationException("Pet species cannot be blank")
-                    )
-                }
-                petRequest.breed?.let { breed ->
-                    if (breed.isBlank()) {
-                        return@flatMap Mono.error<ServerResponse>(
-                            ValidationException("Pet breed cannot be blank")
-                        )
-                    }
-                }
-                petRequest.nickname?.let { nickname ->
-                    if (nickname.isBlank()) {
-                        return@flatMap Mono.error<ServerResponse>(
-                            ValidationException("Pet nickname cannot be blank")
-                        )
-                    }
-                }
-
-                val species = Species.entries.find {
-                    it.name.equals(petRequest.species, ignoreCase = true)
-                } ?: return@flatMap Mono.error<ServerResponse>(
-                    ValidationException("Invalid species: ${petRequest.species}. Must be one of: ${Species.entries.joinToString()}")
-                )
-
-                val command = RegisterPetCommand(
-                    userId = userId,
-                    name = petRequest.name,
-                    species = species,
-                    breed = petRequest.breed,
-                    age = petRequest.age,
-                    birthdate = petRequest.birthdate,
-                    weight = petRequest.weight,
-                    nickname = petRequest.nickname
-                )
-
-                registerPetUseCase.execute(command)
-                    .flatMap { pet -> buildCreatedResponse(pet) }
             }
         }
             .onErrorResume { throwable ->
@@ -109,29 +68,20 @@ class PetHandler(
 
             request.bodyToMono(GeneratePresignedUrlRequest::class.java)
             .flatMap { urlRequest ->
-                if (urlRequest.contentType.isBlank()) {
-                    return@flatMap Mono.error<ServerResponse>(
-                        ValidationException("Content type cannot be blank")
-                    )
+                when (val result = urlRequest.validate(userId, petId)) {
+                    is Validated.Invalid -> Mono.error(ValidationException(result.error))
+                    is Validated.Valid -> generateAvatarPresignedUrlUseCase.execute(result.value)
+                        .flatMap { presignedUrl ->
+                            val response = PresignedUrlResponse(
+                                uploadUrl = presignedUrl.uploadUrl,
+                                key = presignedUrl.key,
+                                expiresAt = presignedUrl.expiresAt.toString()
+                            )
+                            ServerResponse.ok()
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .bodyValue(response)
+                        }
                 }
-
-                val command = GeneratePresignedUrlCommand(
-                    userId = userId,
-                    petId = petId,
-                    contentType = urlRequest.contentType
-                )
-
-                generateAvatarPresignedUrlUseCase.execute(command)
-                    .flatMap { presignedUrl ->
-                        val response = PresignedUrlResponse(
-                            uploadUrl = presignedUrl.uploadUrl,
-                            key = presignedUrl.key,
-                            expiresAt = presignedUrl.expiresAt.toString()
-                        )
-                        ServerResponse.ok()
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .bodyValue(response)
-                    }
             }
         }
             .onErrorResume { throwable ->
@@ -149,20 +99,11 @@ class PetHandler(
 
             request.bodyToMono(ConfirmAvatarUploadRequest::class.java)
             .flatMap { confirmRequest ->
-                if (confirmRequest.photoKey.isBlank()) {
-                    return@flatMap Mono.error<ServerResponse>(
-                        ValidationException("Photo key cannot be blank")
-                    )
+                when (val result = confirmRequest.validate(userId, petId)) {
+                    is Validated.Invalid -> Mono.error(ValidationException(result.error))
+                    is Validated.Valid -> confirmAvatarUploadUseCase.execute(result.value)
+                        .flatMap { pet -> buildOkResponse(pet) }
                 }
-
-                val command = ConfirmAvatarUploadCommand(
-                    userId = userId,
-                    petId = petId,
-                    photoKey = confirmRequest.photoKey
-                )
-
-                confirmAvatarUploadUseCase.execute(command)
-                    .flatMap { pet -> buildOkResponse(pet) }
             }
         }
             .onErrorResume { throwable ->

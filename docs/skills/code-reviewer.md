@@ -36,14 +36,51 @@ Reviews code for architecture compliance, quality, security, and test coverage.
 
 ## Validation Patterns
 
-Flag chained `if (...) throw` blocks as a code smell. Require idiomatic Kotlin alternatives:
+Flag chained `if (...) throw` blocks and `if`/`return@flatMap Mono.error` blocks as code smells. Require idiomatic Kotlin alternatives:
 
 | Scenario | Pattern | Example |
 |----------|---------|---------|
-| Multiple field validations | `listOfNotNull` + `takeIf` | Aggregates all errors into one `ValidationException` with `joinToString("; ")` |
+| Handler request validation | `Validated<T>` sealed class + DTO `validate()` extension | Returns `Valid<Command>` or `Invalid(error)`, handler dispatches with `when` |
+| Use case multi-field validation | `listOfNotNull` + `takeIf` | Aggregates all errors into one `ValidationException` with `joinToString("; ")` |
 | Single guard condition | `when` expression | Fail-fast with one `throw` |
 
-**Bad** (flag as MEDIUM severity):
+**Bad** (flag as MEDIUM severity) — imperative handler validation:
+```kotlin
+.flatMap { petRequest ->
+    if (petRequest.name.isBlank()) {
+        return@flatMap Mono.error<ServerResponse>(ValidationException("Name required"))
+    }
+    if (petRequest.species.isBlank()) {
+        return@flatMap Mono.error<ServerResponse>(ValidationException("Species required"))
+    }
+    // ... more if blocks
+    val command = RegisterPetCommand(...)
+    useCase.execute(command)
+}
+```
+
+**Good** — `Validated<T>` with DTO extension:
+```kotlin
+fun RegisterPetRequest.validate(userId: String): Validated<RegisterPetCommand> {
+    val error = when {
+        name.isBlank() -> "Name required"
+        species.isBlank() -> "Species required"
+        else -> null
+    }
+    if (error != null) return Validated.Invalid(error)
+    return Validated.Valid(RegisterPetCommand(userId, name, ...))
+}
+
+// In handler:
+.flatMap { petRequest ->
+    when (val result = petRequest.validate(userId)) {
+        is Validated.Invalid -> Mono.error(ValidationException(result.error))
+        is Validated.Valid -> useCase.execute(result.value)
+    }
+}
+```
+
+**Bad** (flag as MEDIUM severity) — chained if/throw in use cases:
 ```kotlin
 if (name.isBlank()) throw ValidationException("Name required")
 if (age < 0) throw ValidationException("Invalid age")
@@ -99,6 +136,7 @@ fun uploadPhoto(userId: String, petId: String, photo: PhotoUploadData): Mono<Str
 | Missing error handling in chain | MEDIUM | Add `onErrorResume`/`onErrorMap` |
 | `@SpringBootTest` in unit test | MEDIUM | Use `@ExtendWith(MockitoExtension::class)` |
 | Chained `if` throw validations | MEDIUM | Use `listOfNotNull`+`takeIf` or `when` |
+| Imperative `if`/`Mono.error` in handlers | MEDIUM | Use `Validated<T>` sealed class with DTO `validate()` extension |
 | Function with >5 arguments | MEDIUM | Create a `data class` DTO to group params |
 | Missing bracket identifier in log | LOW | Add `[$id]` prefix |
 | DTO reused as domain model | LOW | Create separate domain data class |

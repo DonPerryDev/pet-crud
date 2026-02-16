@@ -31,7 +31,52 @@ Implements production Kotlin/Spring WebFlux code following Clean Architecture pa
 
 ## Validation Patterns
 
-Use **idiomatic Kotlin** instead of chained `if` throws:
+Use **idiomatic Kotlin** instead of chained `if` throws.
+
+### Handler-Level Validation (Validated sealed class)
+
+Handlers must **never** contain imperative `if`/`return@flatMap Mono.error` validation blocks. Instead, use a `Validated<T>` sealed class with `validate()` extension functions on request DTOs. This keeps handlers declarative and validation logic testable in isolation.
+
+**Validated sealed class** (in `rest/common/validation/`):
+```kotlin
+sealed class Validated<out T> {
+    data class Valid<T>(val value: T) : Validated<T>()
+    data class Invalid(val error: String) : Validated<Nothing>()
+}
+```
+
+**DTO validate() extension** — converts a request DTO into a domain command or returns an error:
+```kotlin
+fun RegisterPetRequest.validate(userId: String): Validated<RegisterPetCommand> {
+    val error = when {
+        name.isBlank() -> "Pet name cannot be blank"
+        species.isBlank() -> "Pet species cannot be blank"
+        breed?.isBlank() == true -> "Pet breed cannot be blank"
+        nickname?.isBlank() == true -> "Pet nickname cannot be blank"
+        else -> null
+    }
+    if (error != null) return Validated.Invalid(error)
+
+    val parsedSpecies = Species.entries.find { it.name.equals(species, ignoreCase = true) }
+        ?: return Validated.Invalid("Invalid species: $species. Must be one of: ${Species.entries.joinToString()}")
+
+    return Validated.Valid(RegisterPetCommand(userId, name, parsedSpecies, breed, age, birthdate, weight, nickname))
+}
+```
+
+**Handler usage** — `when` expression dispatches on the validation result:
+```kotlin
+request.bodyToMono(RegisterPetRequest::class.java)
+    .flatMap { petRequest ->
+        when (val result = petRequest.validate(userId)) {
+            is Validated.Invalid -> Mono.error(ValidationException(result.error))
+            is Validated.Valid -> registerPetUseCase.execute(result.value)
+                .flatMap { pet -> buildCreatedResponse(pet) }
+        }
+    }
+```
+
+### Use Case-Level Validation (listOfNotNull + takeIf)
 
 **Aggregate errors** — when the user benefits from seeing all validation failures at once:
 ```kotlin
@@ -47,6 +92,8 @@ private fun validateInputs(userId: String, name: String, age: Int) {
 }
 ```
 
+### Single-Condition Guards (when expression)
+
 **Fail-fast** — when a single condition is enough to reject:
 ```kotlin
 private fun validatePhoto(photoSize: Long?) {
@@ -56,7 +103,7 @@ private fun validatePhoto(photoSize: Long?) {
 }
 ```
 
-> **Never** use chained `if (...) throw` blocks. Use `listOfNotNull` + `takeIf` for multi-field validation, `when` for single-condition guards.
+> **Never** use chained `if (...) throw` blocks or `if`/`return@flatMap Mono.error` blocks. Use `Validated<T>` for handler validation, `listOfNotNull` + `takeIf` for use case validation, `when` for single-condition guards.
 
 ## Function Argument Limits
 
