@@ -17,36 +17,39 @@ class ConfirmAvatarUploadUseCase(
 ) {
     companion object {
         private val logger: Logger = Logger.getLogger(ConfirmAvatarUploadUseCase::class.java.name)
+        private val ALLOWED_CONTENT_TYPES = setOf("image/jpeg", "image/png")
     }
 
     fun execute(command: ConfirmAvatarUploadCommand): Mono<Pet> {
         logger.info("[${command.userId}] Confirming avatar upload for pet ${command.petId}")
 
         return Mono.fromCallable {
-            validatePhotoKey(command.photoKey, command.userId, command.petId)
+            validateContentType(command.contentType)
+            photoStorageGateway.buildPhotoKey(command.userId, command.petId, command.contentType)
         }
-        .then(Mono.defer {
+        .flatMap { photoKey ->
             petPersistenceGateway.findById(command.petId)
                 .switchIfEmpty(Mono.error(PetNotFoundException(command.petId)))
-        })
-        .flatMap { pet ->
+                .map { pet -> pet to photoKey }
+        }
+        .flatMap { (pet, photoKey) ->
             if (pet.owner != command.userId) {
                 logger.warning("[${command.userId}] Unauthorized access attempt to pet ${command.petId}")
                 Mono.error(UnauthorizedException("User ${command.userId} is not the owner of pet ${command.petId}"))
             } else {
                 logger.fine("[${command.userId}] Pet ownership verified for ${command.petId}")
-                photoStorageGateway.verifyPhotoExists(command.photoKey)
+                photoStorageGateway.verifyPhotoExists(photoKey)
                     .flatMap { exists ->
                         if (!exists) {
-                            Mono.error(PhotoNotFoundException(command.photoKey))
+                            Mono.error(PhotoNotFoundException(photoKey))
                         } else {
-                            Mono.just(pet)
+                            Mono.just(pet to photoKey)
                         }
                     }
             }
         }
-        .flatMap { pet ->
-            val photoUrl = photoStorageGateway.buildPhotoUrl(command.photoKey)
+        .flatMap { (pet, photoKey) ->
+            val photoUrl = photoStorageGateway.buildPhotoUrl(photoKey)
             logger.info("[${command.userId}] Photo verified, updating pet with URL: $photoUrl")
             petPersistenceGateway.save(pet.copy(photoUrl = photoUrl))
         }
@@ -58,11 +61,10 @@ class ConfirmAvatarUploadUseCase(
         }
     }
 
-    private fun validatePhotoKey(photoKey: String, userId: String, petId: String) {
-        val expectedPrefix = "pets/$userId/$petId/"
+    private fun validateContentType(contentType: String) {
         when {
-            !photoKey.startsWith(expectedPrefix) -> throw ValidationException(
-                "Invalid photo key: $photoKey. Must start with $expectedPrefix"
+            contentType !in ALLOWED_CONTENT_TYPES -> throw ValidationException(
+                "Invalid content type: $contentType. Must be one of: ${ALLOWED_CONTENT_TYPES.joinToString()}"
             )
         }
     }

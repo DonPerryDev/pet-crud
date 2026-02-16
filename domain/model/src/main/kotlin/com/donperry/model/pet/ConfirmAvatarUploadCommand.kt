@@ -3,5 +3,5 @@ package com.donperry.model.pet
 data class ConfirmAvatarUploadCommand(
     val userId: String,
     val petId: String,
-    val photoKey: String
+    val contentType: String
 )

@@ -393,7 +393,7 @@ class PetHandlerTest {
         // Arrange
         val userId = "user-123"
         val petId = "pet-123"
-        val request = ConfirmAvatarUploadRequest(photoKey = "pets/user-123/pet-123/avatar.jpg")
+        val request = ConfirmAvatarUploadRequest(contentType = "image/jpeg")
 
         val updatedPet = Pet(
             id = petId,
@@ -455,7 +455,7 @@ class PetHandlerTest {
         // Arrange
         val userId = "user-123"
         val petId = "pet-999"
-        val request = ConfirmAvatarUploadRequest(photoKey = "pets/user-123/pet-999/avatar.jpg")
+        val request = ConfirmAvatarUploadRequest(contentType = "image/jpeg")
 
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.bodyToMono(ConfirmAvatarUploadRequest::class.java))
@@ -482,7 +482,7 @@ class PetHandlerTest {
         val userId = "user-123"
         val petId = "pet-123"
         val photoKey = "pets/user-123/pet-123/avatar.jpg"
-        val request = ConfirmAvatarUploadRequest(photoKey = photoKey)
+        val request = ConfirmAvatarUploadRequest(contentType = "image/jpeg")
 
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.bodyToMono(ConfirmAvatarUploadRequest::class.java))
@@ -508,7 +508,7 @@ class PetHandlerTest {
         // Arrange
         val userId = "user-123"
         val petId = "pet-456"
-        val request = ConfirmAvatarUploadRequest(photoKey = "pets/other-user/pet-456/avatar.jpg")
+        val request = ConfirmAvatarUploadRequest(contentType = "image/jpeg")
 
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.bodyToMono(ConfirmAvatarUploadRequest::class.java))

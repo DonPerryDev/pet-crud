@@ -105,7 +105,7 @@ class S3PhotoStorageAdapterTest {
         StepVerifier.create(adapter.generatePresignedUrl(userId, petId, contentType, expirationMinutes))
             .assertNext { result ->
                 assert(result.key.endsWith(".jpg"))
-                assert(result.key.matches(Regex("pets/$userId/$petId/[a-f0-9-]+\\.jpg")))
+                assert(result.key.matches(Regex("pets/$userId/$petId/avatar\\.jpg")))
             }
             .verifyComplete()
     }
@@ -126,7 +126,7 @@ class S3PhotoStorageAdapterTest {
         StepVerifier.create(adapter.generatePresignedUrl(userId, petId, contentType, expirationMinutes))
             .assertNext { result ->
                 assert(result.key.endsWith(".png"))
-                assert(result.key.matches(Regex("pets/$userId/$petId/[a-f0-9-]+\\.png")))
+                assert(result.key.matches(Regex("pets/$userId/$petId/avatar\\.png")))
             }
             .verifyComplete()
     }
@@ -147,13 +147,13 @@ class S3PhotoStorageAdapterTest {
         StepVerifier.create(adapter.generatePresignedUrl(userId, petId, contentType, expirationMinutes))
             .assertNext { result ->
                 assert(result.key.endsWith(".bin"))
-                assert(result.key.matches(Regex("pets/$userId/$petId/[a-f0-9-]+\\.bin")))
+                assert(result.key.matches(Regex("pets/$userId/$petId/avatar\\.bin")))
             }
             .verifyComplete()
     }
 
     @Test
-    fun `should generate key following pattern pets-userId-petId-uuid-extension`() {
+    fun `should generate key following pattern pets-userId-petId-avatar-extension`() {
         // Arrange
         val userId = "test-user"
         val petId = "test-pet"
@@ -167,7 +167,7 @@ class S3PhotoStorageAdapterTest {
         // Act & Assert
         StepVerifier.create(adapter.generatePresignedUrl(userId, petId, contentType, expirationMinutes))
             .assertNext { result ->
-                val keyPattern = Regex("pets/$userId/$petId/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\\.jpg")
+                val keyPattern = Regex("pets/$userId/$petId/avatar\\.jpg")
                 assert(result.key.matches(keyPattern)) { "Key ${result.key} does not match expected pattern" }
             }
             .verifyComplete()
@@ -337,6 +337,89 @@ class S3PhotoStorageAdapterTest {
         // Assert
         assert(result == "https://test-bucket.s3.us-east-1.amazonaws.com/$photoKey") {
             "URL format incorrect: $result"
+        }
+    }
+
+    // buildPhotoKey tests
+
+    @Test
+    fun `should build photo key with jpg extension for image-jpeg content type`() {
+        // Arrange
+        val userId = "user123"
+        val petId = "pet456"
+        val contentType = "image/jpeg"
+
+        // Act
+        val result = adapter.buildPhotoKey(userId, petId, contentType)
+
+        // Assert
+        assert(result == "pets/$userId/$petId/avatar.jpg") {
+            "Expected pets/$userId/$petId/avatar.jpg but got $result"
+        }
+    }
+
+    @Test
+    fun `should build photo key with png extension for image-png content type`() {
+        // Arrange
+        val userId = "user789"
+        val petId = "pet012"
+        val contentType = "image/png"
+
+        // Act
+        val result = adapter.buildPhotoKey(userId, petId, contentType)
+
+        // Assert
+        assert(result == "pets/$userId/$petId/avatar.png") {
+            "Expected pets/$userId/$petId/avatar.png but got $result"
+        }
+    }
+
+    @Test
+    fun `should build photo key with bin extension for unknown content type`() {
+        // Arrange
+        val userId = "user555"
+        val petId = "pet666"
+        val contentType = "application/octet-stream"
+
+        // Act
+        val result = adapter.buildPhotoKey(userId, petId, contentType)
+
+        // Assert
+        assert(result == "pets/$userId/$petId/avatar.bin") {
+            "Expected pets/$userId/$petId/avatar.bin but got $result"
+        }
+    }
+
+    @Test
+    fun `should build photo key with bin extension for empty content type`() {
+        // Arrange
+        val userId = "userABC"
+        val petId = "petXYZ"
+        val contentType = ""
+
+        // Act
+        val result = adapter.buildPhotoKey(userId, petId, contentType)
+
+        // Assert
+        assert(result == "pets/$userId/$petId/avatar.bin") {
+            "Expected pets/$userId/$petId/avatar.bin but got $result"
+        }
+    }
+
+    @Test
+    fun `should build photo key following pets-userId-petId-avatar-extension pattern`() {
+        // Arrange
+        val userId = "test-user-123"
+        val petId = "test-pet-456"
+        val contentType = "image/jpeg"
+
+        // Act
+        val result = adapter.buildPhotoKey(userId, petId, contentType)
+
+        // Assert
+        val keyPattern = Regex("pets/test-user-123/test-pet-456/avatar\\.jpg")
+        assert(result.matches(keyPattern)) {
+            "Key $result does not match expected pattern"
         }
     }
 }

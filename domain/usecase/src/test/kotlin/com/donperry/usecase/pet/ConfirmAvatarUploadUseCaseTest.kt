@@ -42,7 +42,8 @@ class ConfirmAvatarUploadUseCaseTest {
     fun `should confirm avatar upload when photo exists`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = "pets/$userId/$petId/photo.jpg"
+        val contentType = "image/jpeg"
+        val photoKey = "pets/$userId/$petId/avatar.jpg"
         val photoUrl = "https://s3.amazonaws.com/bucket/$photoKey"
 
         val pet = Pet(
@@ -58,6 +59,7 @@ class ConfirmAvatarUploadUseCaseTest {
 
         val updatedPet = pet.copy(photoUrl = photoUrl)
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(pet))
         whenever(photoStorageGateway.verifyPhotoExists(photoKey)).thenReturn(Mono.just(true))
         whenever(photoStorageGateway.buildPhotoUrl(photoKey)).thenReturn(photoUrl)
@@ -66,13 +68,14 @@ class ConfirmAvatarUploadUseCaseTest {
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
             .expectNext(updatedPet)
             .verifyComplete()
 
+        verify(photoStorageGateway).buildPhotoKey(userId, petId, contentType)
         verify(petPersistenceGateway).findById(petId)
         verify(photoStorageGateway).verifyPhotoExists(photoKey)
         verify(photoStorageGateway).buildPhotoUrl(photoKey)
@@ -83,6 +86,7 @@ class ConfirmAvatarUploadUseCaseTest {
     fun `should update pet with photoUrl when confirmation succeeds`() {
         val userId = "user-123"
         val petId = "pet-456"
+        val contentType = "image/png"
         val photoKey = "pets/$userId/$petId/avatar.png"
         val photoUrl = "https://cloudfront.net/$photoKey"
 
@@ -99,6 +103,7 @@ class ConfirmAvatarUploadUseCaseTest {
 
         val updatedPet = pet.copy(photoUrl = photoUrl)
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(pet))
         whenever(photoStorageGateway.verifyPhotoExists(photoKey)).thenReturn(Mono.just(true))
         whenever(photoStorageGateway.buildPhotoUrl(photoKey)).thenReturn(photoUrl)
@@ -107,7 +112,7 @@ class ConfirmAvatarUploadUseCaseTest {
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
@@ -121,85 +126,88 @@ class ConfirmAvatarUploadUseCaseTest {
 
     // Validation error tests
     @Test
-    fun `should throw ValidationException when photoKey has invalid prefix`() {
+    fun `should throw ValidationException when contentType is not image jpeg or png`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = "invalid/path/photo.jpg"
+        val contentType = "image/gif"
 
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
             .expectErrorMatches { throwable ->
                 throwable is ValidationException &&
-                throwable.message!!.contains("Invalid photo key: $photoKey") &&
-                throwable.message!!.contains("pets/$userId/$petId/")
+                throwable.message!!.contains("Invalid content type: $contentType")
             }
             .verify()
 
+        verify(photoStorageGateway, never()).buildPhotoKey(any(), any(), any())
         verify(petPersistenceGateway, never()).findById(any())
         verify(photoStorageGateway, never()).verifyPhotoExists(any())
         verify(petPersistenceGateway, never()).save(any())
     }
 
     @Test
-    fun `should throw ValidationException when photoKey userId mismatch`() {
+    fun `should throw ValidationException when contentType is text plain`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = "pets/user-999/$petId/photo.jpg"
+        val contentType = "text/plain"
 
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
             .expectError(ValidationException::class.java)
             .verify()
 
+        verify(photoStorageGateway, never()).buildPhotoKey(any(), any(), any())
         verify(petPersistenceGateway, never()).findById(any())
         verify(photoStorageGateway, never()).verifyPhotoExists(any())
     }
 
     @Test
-    fun `should throw ValidationException when photoKey petId mismatch`() {
+    fun `should throw ValidationException when contentType is empty string`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = "pets/$userId/pet-999/photo.jpg"
+        val contentType = ""
 
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
             .expectError(ValidationException::class.java)
             .verify()
 
+        verify(photoStorageGateway, never()).buildPhotoKey(any(), any(), any())
         verify(petPersistenceGateway, never()).findById(any())
     }
 
     @Test
-    fun `should throw ValidationException when photoKey is empty string`() {
+    fun `should throw ValidationException when contentType is application pdf`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = ""
+        val contentType = "application/pdf"
 
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
             .expectError(ValidationException::class.java)
             .verify()
 
+        verify(photoStorageGateway, never()).buildPhotoKey(any(), any(), any())
         verify(petPersistenceGateway, never()).findById(any())
     }
 
@@ -208,14 +216,16 @@ class ConfirmAvatarUploadUseCaseTest {
     fun `should throw PetNotFoundException when pet does not exist`() {
         val userId = "user-123"
         val petId = "pet-nonexistent"
-        val photoKey = "pets/$userId/$petId/photo.jpg"
+        val contentType = "image/jpeg"
+        val photoKey = "pets/$userId/$petId/avatar.jpg"
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.empty())
 
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
@@ -225,6 +235,7 @@ class ConfirmAvatarUploadUseCaseTest {
             }
             .verify()
 
+        verify(photoStorageGateway).buildPhotoKey(userId, petId, contentType)
         verify(petPersistenceGateway).findById(petId)
         verify(photoStorageGateway, never()).verifyPhotoExists(any())
         verify(petPersistenceGateway, never()).save(any())
@@ -236,7 +247,8 @@ class ConfirmAvatarUploadUseCaseTest {
         val userId = "user-123"
         val actualOwnerId = "user-999"
         val petId = "pet-456"
-        val photoKey = "pets/$userId/$petId/photo.jpg"
+        val contentType = "image/jpeg"
+        val photoKey = "pets/$userId/$petId/avatar.jpg"
 
         val pet = Pet(
             id = petId,
@@ -248,12 +260,13 @@ class ConfirmAvatarUploadUseCaseTest {
             registrationDate = LocalDate.now()
         )
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(pet))
 
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
@@ -263,6 +276,7 @@ class ConfirmAvatarUploadUseCaseTest {
             }
             .verify()
 
+        verify(photoStorageGateway).buildPhotoKey(userId, petId, contentType)
         verify(petPersistenceGateway).findById(petId)
         verify(photoStorageGateway, never()).verifyPhotoExists(any())
         verify(petPersistenceGateway, never()).save(any())
@@ -272,7 +286,8 @@ class ConfirmAvatarUploadUseCaseTest {
     fun `should throw UnauthorizedException when userId does not match owner`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = "pets/$userId/$petId/photo.jpg"
+        val contentType = "image/jpeg"
+        val photoKey = "pets/$userId/$petId/avatar.jpg"
 
         val pet = Pet(
             id = petId,
@@ -284,18 +299,20 @@ class ConfirmAvatarUploadUseCaseTest {
             registrationDate = LocalDate.now()
         )
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(pet))
 
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
             .expectError(UnauthorizedException::class.java)
             .verify()
 
+        verify(photoStorageGateway).buildPhotoKey(userId, petId, contentType)
         verify(petPersistenceGateway).findById(petId)
         verify(photoStorageGateway, never()).verifyPhotoExists(any())
     }
@@ -305,7 +322,8 @@ class ConfirmAvatarUploadUseCaseTest {
     fun `should throw PhotoNotFoundException when photo not in S3`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = "pets/$userId/$petId/photo.jpg"
+        val contentType = "image/jpeg"
+        val photoKey = "pets/$userId/$petId/avatar.jpg"
 
         val pet = Pet(
             id = petId,
@@ -317,13 +335,14 @@ class ConfirmAvatarUploadUseCaseTest {
             registrationDate = LocalDate.now()
         )
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(pet))
         whenever(photoStorageGateway.verifyPhotoExists(photoKey)).thenReturn(Mono.just(false))
 
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
@@ -333,6 +352,7 @@ class ConfirmAvatarUploadUseCaseTest {
             }
             .verify()
 
+        verify(photoStorageGateway).buildPhotoKey(userId, petId, contentType)
         verify(petPersistenceGateway).findById(petId)
         verify(photoStorageGateway).verifyPhotoExists(photoKey)
         verify(photoStorageGateway, never()).buildPhotoUrl(any())
@@ -343,7 +363,8 @@ class ConfirmAvatarUploadUseCaseTest {
     fun `should throw PhotoNotFoundException when verifyPhotoExists returns false`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = "pets/$userId/$petId/missing.jpg"
+        val contentType = "image/png"
+        val photoKey = "pets/$userId/$petId/avatar.png"
 
         val pet = Pet(
             id = petId,
@@ -355,19 +376,21 @@ class ConfirmAvatarUploadUseCaseTest {
             registrationDate = LocalDate.now()
         )
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(pet))
         whenever(photoStorageGateway.verifyPhotoExists(photoKey)).thenReturn(Mono.just(false))
 
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
             .expectError(PhotoNotFoundException::class.java)
             .verify()
 
+        verify(photoStorageGateway).buildPhotoKey(userId, petId, contentType)
         verify(photoStorageGateway).verifyPhotoExists(photoKey)
         verify(petPersistenceGateway, never()).save(any())
     }
@@ -377,15 +400,17 @@ class ConfirmAvatarUploadUseCaseTest {
     fun `should propagate error when findById fails`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = "pets/$userId/$petId/photo.jpg"
+        val contentType = "image/jpeg"
+        val photoKey = "pets/$userId/$petId/avatar.jpg"
         val dbError = RuntimeException("Database connection failed")
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.error(dbError))
 
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
@@ -394,6 +419,7 @@ class ConfirmAvatarUploadUseCaseTest {
             }
             .verify()
 
+        verify(photoStorageGateway).buildPhotoKey(userId, petId, contentType)
         verify(petPersistenceGateway).findById(petId)
         verify(photoStorageGateway, never()).verifyPhotoExists(any())
         verify(petPersistenceGateway, never()).save(any())
@@ -403,7 +429,8 @@ class ConfirmAvatarUploadUseCaseTest {
     fun `should propagate error when verifyPhotoExists fails`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = "pets/$userId/$petId/photo.jpg"
+        val contentType = "image/jpeg"
+        val photoKey = "pets/$userId/$petId/avatar.jpg"
 
         val pet = Pet(
             id = petId,
@@ -417,13 +444,14 @@ class ConfirmAvatarUploadUseCaseTest {
 
         val s3Error = RuntimeException("S3 service unavailable")
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(pet))
         whenever(photoStorageGateway.verifyPhotoExists(photoKey)).thenReturn(Mono.error(s3Error))
 
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
@@ -432,6 +460,7 @@ class ConfirmAvatarUploadUseCaseTest {
             }
             .verify()
 
+        verify(photoStorageGateway).buildPhotoKey(userId, petId, contentType)
         verify(petPersistenceGateway).findById(petId)
         verify(photoStorageGateway).verifyPhotoExists(photoKey)
         verify(petPersistenceGateway, never()).save(any())
@@ -441,7 +470,8 @@ class ConfirmAvatarUploadUseCaseTest {
     fun `should propagate error when save fails`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = "pets/$userId/$petId/photo.jpg"
+        val contentType = "image/jpeg"
+        val photoKey = "pets/$userId/$petId/avatar.jpg"
         val photoUrl = "https://s3.amazonaws.com/bucket/$photoKey"
 
         val pet = Pet(
@@ -456,6 +486,7 @@ class ConfirmAvatarUploadUseCaseTest {
 
         val saveError = RuntimeException("Database constraint violation")
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(pet))
         whenever(photoStorageGateway.verifyPhotoExists(photoKey)).thenReturn(Mono.just(true))
         whenever(photoStorageGateway.buildPhotoUrl(photoKey)).thenReturn(photoUrl)
@@ -464,7 +495,7 @@ class ConfirmAvatarUploadUseCaseTest {
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
@@ -473,6 +504,7 @@ class ConfirmAvatarUploadUseCaseTest {
             }
             .verify()
 
+        verify(photoStorageGateway).buildPhotoKey(userId, petId, contentType)
         verify(petPersistenceGateway).findById(petId)
         verify(photoStorageGateway).verifyPhotoExists(photoKey)
         verify(photoStorageGateway).buildPhotoUrl(photoKey)
@@ -483,6 +515,7 @@ class ConfirmAvatarUploadUseCaseTest {
     fun `should call buildPhotoUrl with correct photoKey`() {
         val userId = "user-123"
         val petId = "pet-456"
+        val contentType = "image/jpeg"
         val photoKey = "pets/$userId/$petId/avatar.jpg"
         val photoUrl = "https://cdn.example.com/$photoKey"
 
@@ -498,6 +531,7 @@ class ConfirmAvatarUploadUseCaseTest {
 
         val updatedPet = pet.copy(photoUrl = photoUrl)
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(pet))
         whenever(photoStorageGateway.verifyPhotoExists(photoKey)).thenReturn(Mono.just(true))
         whenever(photoStorageGateway.buildPhotoUrl(photoKey)).thenReturn(photoUrl)
@@ -506,13 +540,14 @@ class ConfirmAvatarUploadUseCaseTest {
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))
             .expectNext(updatedPet)
             .verifyComplete()
 
+        verify(photoStorageGateway).buildPhotoKey(userId, petId, contentType)
         verify(photoStorageGateway).buildPhotoUrl(photoKey)
     }
 
@@ -520,7 +555,8 @@ class ConfirmAvatarUploadUseCaseTest {
     fun `should replace existing photoUrl when confirming new upload`() {
         val userId = "user-123"
         val petId = "pet-456"
-        val photoKey = "pets/$userId/$petId/new-photo.jpg"
+        val contentType = "image/jpeg"
+        val photoKey = "pets/$userId/$petId/avatar.jpg"
         val newPhotoUrl = "https://s3.amazonaws.com/bucket/$photoKey"
 
         val pet = Pet(
@@ -536,6 +572,7 @@ class ConfirmAvatarUploadUseCaseTest {
 
         val updatedPet = pet.copy(photoUrl = newPhotoUrl)
 
+        whenever(photoStorageGateway.buildPhotoKey(userId, petId, contentType)).thenReturn(photoKey)
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(pet))
         whenever(photoStorageGateway.verifyPhotoExists(photoKey)).thenReturn(Mono.just(true))
         whenever(photoStorageGateway.buildPhotoUrl(photoKey)).thenReturn(newPhotoUrl)
@@ -544,7 +581,7 @@ class ConfirmAvatarUploadUseCaseTest {
         val command = ConfirmAvatarUploadCommand(
             userId = userId,
             petId = petId,
-            photoKey = photoKey
+            contentType = contentType
         )
 
         StepVerifier.create(confirmAvatarUploadUseCase.execute(command))

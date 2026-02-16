@@ -14,7 +14,6 @@ import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignReques
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.UUID
 import java.util.logging.Logger
 
 @Component
@@ -31,14 +30,7 @@ class S3PhotoStorageAdapter(
     private val region: String = DefaultAwsRegionProviderChain().region.id()
 
     override fun generatePresignedUrl(userId: String, petId: String, contentType: String, expirationMinutes: Int): Mono<PresignedUploadUrl> {
-        val fileExtension = when (contentType) {
-            "image/jpeg" -> "jpg"
-            "image/png" -> "png"
-            else -> "bin"
-        }
-
-        val fileName = "${UUID.randomUUID()}.$fileExtension"
-        val key = "pets/$userId/$petId/$fileName"
+        val key = buildPhotoKey(userId, petId, contentType)
 
         logger.info("[$petId] Generating presigned URL for key: $key")
 
@@ -71,6 +63,11 @@ class S3PhotoStorageAdapter(
         }
     }
 
+    override fun buildPhotoKey(userId: String, petId: String, contentType: String): String {
+        val fileExtension = resolveExtension(contentType)
+        return "pets/$userId/$petId/avatar.$fileExtension"
+    }
+
     override fun verifyPhotoExists(photoKey: String): Mono<Boolean> {
         logger.fine("Verifying photo exists: $photoKey")
 
@@ -94,5 +91,11 @@ class S3PhotoStorageAdapter(
 
     override fun buildPhotoUrl(photoKey: String): String {
         return "https://${s3Properties.bucketName}.s3.$region.amazonaws.com/$photoKey"
+    }
+
+    private fun resolveExtension(contentType: String): String = when (contentType) {
+        "image/jpeg" -> "jpg"
+        "image/png" -> "png"
+        else -> "bin"
     }
 }
