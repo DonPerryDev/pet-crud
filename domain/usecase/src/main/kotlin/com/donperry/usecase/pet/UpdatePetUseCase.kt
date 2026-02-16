@@ -27,14 +27,11 @@ class UpdatePetUseCase(
         .then(petPersistenceGateway.findById(command.petId))
         .switchIfEmpty(Mono.error(PetNotFoundException(command.petId)))
         .doOnNext { logger.fine("[${command.petId}] Found existing pet, verifying ownership") }
-        .flatMap { existingPet ->
-            if (existingPet.owner != command.userId) {
-                logger.warning("[${command.petId}] Unauthorized update attempt by user: ${command.userId}")
-                Mono.error(UnauthorizedException("User ${command.userId} is not authorized to update pet ${command.petId}"))
-            } else {
-                Mono.just(existingPet)
-            }
-        }
+        .filter { it.owner == command.userId }
+        .switchIfEmpty(Mono.defer {
+            logger.warning("[${command.petId}] Unauthorized update attempt by user: ${command.userId}")
+            Mono.error(UnauthorizedException("User ${command.userId} is not authorized to update pet ${command.petId}"))
+        })
         .map { existingPet ->
             Pet(
                 id = existingPet.id,
