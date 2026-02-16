@@ -36,7 +36,6 @@ class GenerateAvatarPresignedUrlUseCaseTest {
     @InjectMocks
     private lateinit var generateAvatarPresignedUrlUseCase: GenerateAvatarPresignedUrlUseCase
 
-    // Happy path tests
     @Test
     fun `should generate presigned URL when contentType is jpeg`() {
         val userId = "user-123"
@@ -117,7 +116,6 @@ class GenerateAvatarPresignedUrlUseCaseTest {
         verify(photoStorageGateway).generatePresignedUrl(userId, petId, contentType, 15)
     }
 
-    // Validation error tests
     @Test
     fun `should throw ValidationException when contentType is invalid`() {
         val userId = "user-123"
@@ -174,7 +172,6 @@ class GenerateAvatarPresignedUrlUseCaseTest {
         verify(petPersistenceGateway, never()).findById(any())
     }
 
-    // Pet not found tests
     @Test
     fun `should throw PetNotFoundException when pet does not exist`() {
         val userId = "user-123"
@@ -200,7 +197,6 @@ class GenerateAvatarPresignedUrlUseCaseTest {
         verify(photoStorageGateway, never()).generatePresignedUrl(any(), any(), any(), any())
     }
 
-    // Authorization error tests
     @Test
     fun `should throw UnauthorizedException when user is not pet owner`() {
         val userId = "user-123"
@@ -269,7 +265,6 @@ class GenerateAvatarPresignedUrlUseCaseTest {
         verify(photoStorageGateway, never()).generatePresignedUrl(any(), any(), any(), any())
     }
 
-    // Gateway error tests
     @Test
     fun `should propagate error when findById fails`() {
         val userId = "user-123"

@@ -11,7 +11,6 @@ class PetDataTest {
 
     @Test
     fun `PetData should be created with all required fields`() {
-        // Given
         val id = UUID.randomUUID()
         val name = "Buddy"
         val species = "Dog"
@@ -24,7 +23,6 @@ class PetDataTest {
         val registrationDate = LocalDate.of(2023, 12, 25)
         val photoUrl = "https://s3.amazonaws.com/pets/buddy.jpg"
 
-        // When
         val petData = PetData(
             id = id,
             name = name,
@@ -39,7 +37,6 @@ class PetDataTest {
             photoUrl = photoUrl
         )
 
-        // Then
         assertEquals(id, petData.id)
         assertEquals(name, petData.name)
         assertEquals(species, petData.species)
@@ -55,7 +52,6 @@ class PetDataTest {
 
     @Test
     fun `PetData should be created with null id`() {
-        // When
         val petData = PetData(
             id = null,
             name = "Mittens",
@@ -70,7 +66,6 @@ class PetDataTest {
             photoUrl = null
         )
 
-        // Then
         assertNull(petData.id)
         assertEquals("Mittens", petData.name)
         assertEquals("Cat", petData.species)
@@ -85,7 +80,6 @@ class PetDataTest {
 
     @Test
     fun `PetData should handle null breed`() {
-        // When
         val petData = PetData(
             id = UUID.randomUUID(),
             name = "Rex",
@@ -96,7 +90,6 @@ class PetDataTest {
             registrationDate = LocalDate.now()
         )
 
-        // Then
         assertNull(petData.breed)
         assertEquals("Rex", petData.name)
         assertEquals("Dog", petData.species)
@@ -106,7 +99,6 @@ class PetDataTest {
 
     @Test
     fun `PetData should handle empty string breed`() {
-        // When
         val petData = PetData(
             id = UUID.randomUUID(),
             name = "Fluffy",
@@ -117,7 +109,6 @@ class PetDataTest {
             registrationDate = LocalDate.now()
         )
 
-        // Then
         assertEquals("", petData.breed)
         assertEquals("Fluffy", petData.name)
         assertEquals("Cat", petData.species)
@@ -127,7 +118,6 @@ class PetDataTest {
 
     @Test
     fun `PetData should handle zero age`() {
-        // When
         val petData = PetData(
             id = UUID.randomUUID(),
             name = "NewBorn",
@@ -138,7 +128,6 @@ class PetDataTest {
             registrationDate = LocalDate.now()
         )
 
-        // Then
         assertEquals(0, petData.age)
         assertEquals("NewBorn", petData.name)
         assertEquals("Hamster", petData.species)
@@ -148,7 +137,6 @@ class PetDataTest {
 
     @Test
     fun `PetData equality should work correctly with same data`() {
-        // Given
         val id = UUID.randomUUID()
         val registrationDate = LocalDate.of(2023, 10, 15)
         
@@ -172,14 +160,12 @@ class PetDataTest {
             registrationDate = registrationDate
         )
 
-        // Then
         assertEquals(petData1, petData2)
         assertEquals(petData1.hashCode(), petData2.hashCode())
     }
 
     @Test
     fun `PetData equality should work correctly with different data`() {
-        // Given
         val petData1 = PetData(
             id = UUID.randomUUID(),
             name = "Buddy",
@@ -200,14 +186,12 @@ class PetDataTest {
             registrationDate = LocalDate.of(2023, 11, 20)
         )
 
-        // Then
         assertNotEquals(petData1, petData2)
         assertNotEquals(petData1.hashCode(), petData2.hashCode())
     }
 
     @Test
     fun `PetData equality should work correctly with different ids`() {
-        // Given
         val registrationDate = LocalDate.now()
         
         val petData1 = PetData(
@@ -230,13 +214,11 @@ class PetDataTest {
             registrationDate = registrationDate
         )
 
-        // Then
         assertNotEquals(petData1, petData2)
     }
 
     @Test
     fun `PetData should support component destructuring`() {
-        // Given
         val id = UUID.randomUUID()
         val registrationDate = LocalDate.of(2023, 11, 20)
 
@@ -250,10 +232,8 @@ class PetDataTest {
             registrationDate = registrationDate
         )
 
-        // When
         val (dataId, name, species, breed, age, birthdate, weight, nickname, owner, dataRegistrationDate, photoUrl) = petData
 
-        // Then
         assertEquals(id, dataId)
         assertEquals("Charlie", name)
         assertEquals("Dog", species)
@@ -269,7 +249,6 @@ class PetDataTest {
 
     @Test
     fun `PetData copy should work correctly`() {
-        // Given
         val originalPetData = PetData(
             id = UUID.randomUUID(),
             name = "Buddy",
@@ -280,10 +259,8 @@ class PetDataTest {
             registrationDate = LocalDate.now()
         )
 
-        // When
         val copiedPetData = originalPetData.copy(age = 4, owner = "Jane Doe")
 
-        // Then
         assertEquals(originalPetData.id, copiedPetData.id)
         assertEquals(originalPetData.name, copiedPetData.name)
         assertEquals(originalPetData.species, copiedPetData.species)
@@ -295,7 +272,6 @@ class PetDataTest {
 
     @Test
     fun `PetData toString should include all fields`() {
-        // Given
         val id = UUID.fromString("550e8400-e29b-41d4-a716-446655440000")
         val petData = PetData(
             id = id,
@@ -307,10 +283,8 @@ class PetDataTest {
             registrationDate = LocalDate.of(2023, 12, 25)
         )
 
-        // When
         val toStringResult = petData.toString()
 
-        // Then
         assert(toStringResult.contains("550e8400-e29b-41d4-a716-446655440000"))
         assert(toStringResult.contains("Buddy"))
         assert(toStringResult.contains("Dog"))
@@ -322,7 +296,6 @@ class PetDataTest {
 
     @Test
     fun `PetData should handle special characters in strings`() {
-        // When
         val petData = PetData(
             id = UUID.randomUUID(),
             name = "Señor Fluffington",
@@ -333,7 +306,6 @@ class PetDataTest {
             registrationDate = LocalDate.now()
         )
 
-        // Then
         assertEquals("Señor Fluffington", petData.name)
         assertEquals("Cat", petData.species)
         assertEquals("Maine Coon", petData.breed)
@@ -343,10 +315,8 @@ class PetDataTest {
 
     @Test
     fun `PetData should preserve UUID format`() {
-        // Given
         val specificUUID = UUID.fromString("123e4567-e89b-12d3-a456-426614174000")
 
-        // When
         val petData = PetData(
             id = specificUUID,
             name = "UUID Test Pet",
@@ -357,18 +327,15 @@ class PetDataTest {
             registrationDate = LocalDate.now()
         )
 
-        // Then
         assertEquals(specificUUID, petData.id)
         assertEquals("123e4567-e89b-12d3-a456-426614174000", petData.id.toString())
     }
 
     @Test
     fun `PetData should handle different date ranges`() {
-        // Given
         val veryOldDate = LocalDate.of(1900, 1, 1)
         val futureDate = LocalDate.of(2100, 12, 31)
 
-        // When
         val oldPetData = PetData(
             id = UUID.randomUUID(),
             name = "Ancient Pet",
@@ -389,7 +356,6 @@ class PetDataTest {
             registrationDate = futureDate
         )
 
-        // Then
         assertEquals(veryOldDate, oldPetData.registrationDate)
         assertEquals(futureDate, futurePetData.registrationDate)
     }

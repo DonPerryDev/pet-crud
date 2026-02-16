@@ -13,7 +13,6 @@ class PetMapperTest {
 
     @Test
     fun `toEntity should convert Pet model to PetData entity with all fields`() {
-        // Given
         val petId = UUID.randomUUID()
         val registrationDate = LocalDate.of(2023, 12, 25)
         val birthdate = LocalDate.of(2020, 5, 15)
@@ -33,10 +32,8 @@ class PetMapperTest {
             photoUrl = "https://s3.amazonaws.com/pets/buddy.jpg"
         )
 
-        // When
         val result = PetMapper.toEntity(petModel)
 
-        // Then
         assertEquals(petId, result.id)
         assertEquals("Buddy", result.name)
         assertEquals("DOG", result.species)
@@ -52,7 +49,6 @@ class PetMapperTest {
 
     @Test
     fun `toEntity should handle Pet model with null id`() {
-        // Given
         val petModel = Pet(
             id = null,
             name = "Mittens",
@@ -67,10 +63,8 @@ class PetMapperTest {
             photoUrl = null
         )
 
-        // When
         val result = PetMapper.toEntity(petModel)
 
-        // Then
         assertNull(result.id)
         assertEquals("Mittens", result.name)
         assertEquals("CAT", result.species)
@@ -85,7 +79,6 @@ class PetMapperTest {
 
     @Test
     fun `toEntity should handle Pet model with null breed`() {
-        // Given
         val petModel = Pet(
             id = UUID.randomUUID().toString(),
             name = "Rex",
@@ -96,10 +89,8 @@ class PetMapperTest {
             registrationDate = LocalDate.now()
         )
 
-        // When
         val result = PetMapper.toEntity(petModel)
 
-        // Then
         assertNull(result.breed)
         assertEquals("Rex", result.name)
         assertEquals("DOG", result.species)
@@ -109,7 +100,6 @@ class PetMapperTest {
 
     @Test
     fun `toEntity should handle Pet model with empty string breed`() {
-        // Given
         val petModel = Pet(
             id = UUID.randomUUID().toString(),
             name = "Fluffy",
@@ -120,17 +110,14 @@ class PetMapperTest {
             registrationDate = LocalDate.now()
         )
 
-        // When
         val result = PetMapper.toEntity(petModel)
 
-        // Then
         assertEquals("", result.breed)
         assertEquals("Fluffy", result.name)
     }
 
     @Test
     fun `toModel should convert PetData entity to Pet model with all fields`() {
-        // Given
         val petId = UUID.randomUUID()
         val registrationDate = LocalDate.of(2023, 11, 15)
         val birthdate = LocalDate.of(2019, 3, 10)
@@ -150,10 +137,8 @@ class PetMapperTest {
             photoUrl = "https://s3.amazonaws.com/pets/charlie.jpg"
         )
 
-        // When
         val result = PetMapper.toModel(petData)
 
-        // Then
         assertEquals(petId.toString(), result.id)
         assertEquals("Charlie", result.name)
         assertEquals(Species.DOG, result.species)
@@ -169,7 +154,6 @@ class PetMapperTest {
 
     @Test
     fun `toModel should handle PetData entity with null breed`() {
-        // Given
         val petId = UUID.randomUUID()
         val petData = PetData(
             id = petId,
@@ -185,10 +169,8 @@ class PetMapperTest {
             photoUrl = null
         )
 
-        // When
         val result = PetMapper.toModel(petData)
 
-        // Then
         assertEquals(petId.toString(), result.id)
         assertNull(result.breed)
         assertNull(result.birthdate)
@@ -201,7 +183,6 @@ class PetMapperTest {
 
     @Test
     fun `toModel should handle PetData entity with empty string breed`() {
-        // Given
         val petId = UUID.randomUUID()
         val petData = PetData(
             id = petId,
@@ -213,17 +194,14 @@ class PetMapperTest {
             registrationDate = LocalDate.now()
         )
 
-        // When
         val result = PetMapper.toModel(petData)
 
-        // Then
         assertEquals("", result.breed)
         assertEquals("Spot", result.name)
     }
 
     @Test
     fun `toModel and toEntity should be bidirectional for complete Pet`() {
-        // Given
         val birthdate = LocalDate.of(2017, 4, 20)
         val weight = java.math.BigDecimal("20.0")
         val originalPet = Pet(
@@ -240,11 +218,9 @@ class PetMapperTest {
             photoUrl = "https://s3.amazonaws.com/pets/bidi.jpg"
         )
 
-        // When
         val petData = PetMapper.toEntity(originalPet)
         val convertedPet = PetMapper.toModel(petData)
 
-        // Then
         assertEquals(originalPet.id, convertedPet.id)
         assertEquals(originalPet.name, convertedPet.name)
         assertEquals(originalPet.species, convertedPet.species)
@@ -260,7 +236,6 @@ class PetMapperTest {
 
     @Test
     fun `toModel and toEntity should be bidirectional for Pet with null values`() {
-        // Given
         val originalPet = Pet(
             id = null,
             name = "NullTest",
@@ -275,12 +250,10 @@ class PetMapperTest {
             photoUrl = null
         )
 
-        // When
         val petData = PetMapper.toEntity(originalPet)
         val convertedPetData = petData.copy(id = UUID.randomUUID()) // Simulate DB assigning ID
         val convertedPet = PetMapper.toModel(convertedPetData)
 
-        // Then
         assertEquals(convertedPetData.id.toString(), convertedPet.id)
         assertEquals(originalPet.name, convertedPet.name)
         assertEquals(originalPet.species, convertedPet.species)
@@ -296,7 +269,6 @@ class PetMapperTest {
 
     @Test
     fun `toEntity should handle zero age correctly`() {
-        // Given
         val petModel = Pet(
             id = UUID.randomUUID().toString(),
             name = "NewBorn",
@@ -307,16 +279,13 @@ class PetMapperTest {
             registrationDate = LocalDate.now()
         )
 
-        // When
         val result = PetMapper.toEntity(petModel)
 
-        // Then
         assertEquals(0, result.age)
     }
 
     @Test
     fun `toModel should handle zero age correctly`() {
-        // Given
         val petData = PetData(
             id = UUID.randomUUID(),
             name = "Baby",
@@ -327,10 +296,8 @@ class PetMapperTest {
             registrationDate = LocalDate.now()
         )
 
-        // When
         val result = PetMapper.toModel(petData)
 
-        // Then
         assertEquals(0, result.age)
     }
 }

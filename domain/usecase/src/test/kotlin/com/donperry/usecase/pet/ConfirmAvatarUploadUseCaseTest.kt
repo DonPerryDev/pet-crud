@@ -37,7 +37,6 @@ class ConfirmAvatarUploadUseCaseTest {
     @InjectMocks
     private lateinit var confirmAvatarUploadUseCase: ConfirmAvatarUploadUseCase
 
-    // Happy path tests
     @Test
     fun `should confirm avatar upload when photo exists`() {
         val userId = "user-123"
@@ -124,7 +123,6 @@ class ConfirmAvatarUploadUseCaseTest {
         assertEquals(photoUrl, petCaptor.firstValue.photoUrl)
     }
 
-    // Validation error tests
     @Test
     fun `should throw ValidationException when contentType is not image jpeg or png`() {
         val userId = "user-123"
@@ -211,7 +209,6 @@ class ConfirmAvatarUploadUseCaseTest {
         verify(petPersistenceGateway, never()).findById(any())
     }
 
-    // Pet not found tests
     @Test
     fun `should throw PetNotFoundException when pet does not exist`() {
         val userId = "user-123"
@@ -241,7 +238,6 @@ class ConfirmAvatarUploadUseCaseTest {
         verify(petPersistenceGateway, never()).save(any())
     }
 
-    // Authorization error tests
     @Test
     fun `should throw UnauthorizedException when user is not pet owner`() {
         val userId = "user-123"
@@ -317,7 +313,6 @@ class ConfirmAvatarUploadUseCaseTest {
         verify(photoStorageGateway, never()).verifyPhotoExists(any())
     }
 
-    // Photo not found tests
     @Test
     fun `should throw PhotoNotFoundException when photo not in S3`() {
         val userId = "user-123"
@@ -395,7 +390,6 @@ class ConfirmAvatarUploadUseCaseTest {
         verify(petPersistenceGateway, never()).save(any())
     }
 
-    // Gateway error tests
     @Test
     fun `should propagate error when findById fails`() {
         val userId = "user-123"

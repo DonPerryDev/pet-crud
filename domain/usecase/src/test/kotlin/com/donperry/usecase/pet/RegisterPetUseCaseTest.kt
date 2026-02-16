@@ -33,7 +33,6 @@ class RegisterPetUseCaseTest {
     @InjectMocks
     private lateinit var registerPetUseCase: RegisterPetUseCase
 
-    // Happy path tests
     @Test
     fun `should register pet when all required fields valid`() {
         val userId = "user-123"
@@ -207,7 +206,6 @@ class RegisterPetUseCaseTest {
         assertEquals(0, petCaptor.firstValue.age)
     }
 
-    // Validation error tests
     @Test
     fun `should throw ValidationException when userId is blank`() {
         val command = RegisterPetCommand(
@@ -374,7 +372,6 @@ class RegisterPetUseCaseTest {
         verify(petPersistenceGateway, never()).countByOwner(any())
     }
 
-    // Pet limit tests
     @Test
     fun `should throw PetLimitExceededException when user has 10 pets`() {
         val userId = "user-123"
@@ -464,7 +461,6 @@ class RegisterPetUseCaseTest {
         verify(petPersistenceGateway, never()).save(any())
     }
 
-    // Persistence error tests
     @Test
     fun `should propagate error when countByOwner fails`() {
         val userId = "user-123"

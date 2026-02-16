@@ -10,7 +10,6 @@ class PetTest {
 
     @Test
     fun `Pet should be created with all required fields`() {
-        // Given
         val name = "Buddy"
         val species = Species.DOG
         val breed = "Golden Retriever"
@@ -22,7 +21,6 @@ class PetTest {
         val registrationDate = LocalDate.of(2023, 12, 25)
         val photoUrl = "https://s3.amazonaws.com/pets/buddy.jpg"
 
-        // When
         val pet = Pet(
             id = "pet-123",
             name = name,
@@ -37,7 +35,6 @@ class PetTest {
             photoUrl = photoUrl
         )
 
-        // Then
         assertEquals("pet-123", pet.id)
         assertEquals(name, pet.name)
         assertEquals(species, pet.species)
@@ -53,7 +50,6 @@ class PetTest {
 
     @Test
     fun `Pet should be created with null id`() {
-        // When
         val pet = Pet(
             id = null,
             name = "Mittens",
@@ -68,7 +64,6 @@ class PetTest {
             photoUrl = null
         )
 
-        // Then
         assertNull(pet.id)
         assertEquals("Mittens", pet.name)
         assertNull(pet.birthdate)
@@ -79,7 +74,6 @@ class PetTest {
 
     @Test
     fun `Pet should be created with null breed`() {
-        // When
         val pet = Pet(
             id = "pet-456",
             name = "Rex",
@@ -90,7 +84,6 @@ class PetTest {
             registrationDate = LocalDate.now()
         )
 
-        // Then
         assertNull(pet.breed)
         assertEquals("Rex", pet.name)
         assertEquals(Species.DOG, pet.species)
@@ -98,7 +91,6 @@ class PetTest {
 
     @Test
     fun `Pet should handle empty string breed`() {
-        // When
         val pet = Pet(
             id = "pet-789",
             name = "Fluffy",
@@ -109,14 +101,12 @@ class PetTest {
             registrationDate = LocalDate.now()
         )
 
-        // Then
         assertEquals("", pet.breed)
         assertEquals("Fluffy", pet.name)
     }
 
     @Test
     fun `Pet should handle zero age`() {
-        // When
         val pet = Pet(
             id = "pet-000",
             name = "NewBorn",
@@ -127,14 +117,12 @@ class PetTest {
             registrationDate = LocalDate.now()
         )
 
-        // Then
         assertEquals(0, pet.age)
         assertEquals("NewBorn", pet.name)
     }
 
     @Test
     fun `Pet equality should work correctly with same data`() {
-        // Given
         val registrationDate = LocalDate.of(2023, 10, 15)
         val pet1 = Pet(
             id = "pet-123",
@@ -156,14 +144,12 @@ class PetTest {
             registrationDate = registrationDate
         )
 
-        // Then
         assertEquals(pet1, pet2)
         assertEquals(pet1.hashCode(), pet2.hashCode())
     }
 
     @Test
     fun `Pet equality should work correctly with different data`() {
-        // Given
         val pet1 = Pet(
             id = "pet-123",
             name = "Buddy",
@@ -184,14 +170,12 @@ class PetTest {
             registrationDate = LocalDate.now()
         )
 
-        // Then
         assertNotEquals(pet1, pet2)
         assertNotEquals(pet1.hashCode(), pet2.hashCode())
     }
 
     @Test
     fun `Pet equality should work correctly with different ids`() {
-        // Given
         val registrationDate = LocalDate.now()
         val pet1 = Pet(
             id = "pet-123",
@@ -213,13 +197,11 @@ class PetTest {
             registrationDate = registrationDate
         )
 
-        // Then
         assertNotEquals(pet1, pet2)
     }
 
     @Test
     fun `Pet should support component destructuring`() {
-        // Given
         val pet = Pet(
             id = "pet-123",
             name = "Buddy",
@@ -230,10 +212,8 @@ class PetTest {
             registrationDate = LocalDate.of(2023, 11, 20)
         )
 
-        // When
         val (id, name, species, breed, age, birthdate, weight, nickname, owner, registrationDate, photoUrl) = pet
 
-        // Then
         assertEquals("pet-123", id)
         assertEquals("Buddy", name)
         assertEquals(Species.DOG, species)
@@ -249,7 +229,6 @@ class PetTest {
 
     @Test
     fun `Pet copy should work correctly`() {
-        // Given
         val originalPet = Pet(
             id = "pet-123",
             name = "Buddy",
@@ -264,14 +243,12 @@ class PetTest {
             photoUrl = "https://s3.amazonaws.com/pets/buddy.jpg"
         )
 
-        // When
         val copiedPet = originalPet.copy(
             age = 4,
             owner = "Jane Doe",
             photoUrl = "https://s3.amazonaws.com/pets/buddy-new.jpg"
         )
 
-        // Then
         assertEquals(originalPet.id, copiedPet.id)
         assertEquals(originalPet.name, copiedPet.name)
         assertEquals(originalPet.species, copiedPet.species)
@@ -287,7 +264,6 @@ class PetTest {
 
     @Test
     fun `Pet toString should include all fields`() {
-        // Given
         val pet = Pet(
             id = "pet-123",
             name = "Buddy",
@@ -302,10 +278,8 @@ class PetTest {
             photoUrl = "https://s3.amazonaws.com/pets/buddy.jpg"
         )
 
-        // When
         val toStringResult = pet.toString()
 
-        // Then
         assert(toStringResult.contains("pet-123"))
         assert(toStringResult.contains("Buddy"))
         assert(toStringResult.contains("DOG"))
@@ -321,7 +295,6 @@ class PetTest {
 
     @Test
     fun `Pet should handle Species DOG correctly`() {
-        // When
         val pet = Pet(
             id = "pet-dog",
             name = "Rex",
@@ -336,13 +309,11 @@ class PetTest {
             photoUrl = null
         )
 
-        // Then
         assertEquals(Species.DOG, pet.species)
     }
 
     @Test
     fun `Pet should handle Species CAT correctly`() {
-        // When
         val pet = Pet(
             id = "pet-cat",
             name = "Whiskers",
@@ -357,7 +328,6 @@ class PetTest {
             photoUrl = null
         )
 
-        // Then
         assertEquals(Species.CAT, pet.species)
     }
 }

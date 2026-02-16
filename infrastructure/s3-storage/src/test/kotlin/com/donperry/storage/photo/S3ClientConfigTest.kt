@@ -10,20 +10,16 @@ class S3ClientConfigTest {
 
     @Test
     fun `should create non-null S3AsyncClient instance`() {
-        // Act
         val client: S3AsyncClient = config.s3AsyncClient()
 
-        // Assert
         assert(client != null)
         client.close()
     }
 
     @Test
     fun `should create non-null S3Presigner instance`() {
-        // Act
         val presigner: S3Presigner = config.s3Presigner()
 
-        // Assert
         assert(presigner != null)
         presigner.close()
     }

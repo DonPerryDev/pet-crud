@@ -52,11 +52,9 @@ class PetHandlerTest {
     @InjectMocks
     private lateinit var petHandler: PetHandler
 
-    // ==================== registerPet Tests ====================
 
     @Test
     fun `should return 201 with PetResponse when pet registration is successful`() {
-        // Arrange
         val userId = "user-123"
         val request = RegisterPetRequest(
             name = "Buddy",
@@ -87,7 +85,6 @@ class PetHandlerTest {
         whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
         whenever(registerPetUseCase.execute(any())).thenReturn(Mono.just(expectedPet))
 
-        // Act & Assert
         StepVerifier.create(petHandler.registerPet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.CREATED &&
@@ -107,7 +104,6 @@ class PetHandlerTest {
 
     @Test
     fun `should return 400 when species is invalid`() {
-        // Arrange
         val userId = "user-123"
         val request = RegisterPetRequest(
             name = "Buddy",
@@ -123,7 +119,6 @@ class PetHandlerTest {
             .thenReturn(Mono.just(request))
         whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
 
-        // Act & Assert
         StepVerifier.create(petHandler.registerPet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.BAD_REQUEST &&
@@ -138,10 +133,8 @@ class PetHandlerTest {
 
     @Test
     fun `should return 401 when no authentication context is found for registerPet`() {
-        // Arrange
         whenever(serverRequest.attribute("userId")).thenReturn(Optional.empty())
 
-        // Act & Assert
         StepVerifier.create(petHandler.registerPet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.UNAUTHORIZED &&
@@ -156,7 +149,6 @@ class PetHandlerTest {
 
     @Test
     fun `should return 409 when use case throws PetLimitExceededException`() {
-        // Arrange
         val userId = "user-123"
         val request = RegisterPetRequest(
             name = "Buddy",
@@ -174,7 +166,6 @@ class PetHandlerTest {
         whenever(registerPetUseCase.execute(any()))
             .thenReturn(Mono.error(PetLimitExceededException(userId)))
 
-        // Act & Assert
         StepVerifier.create(petHandler.registerPet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.CONFLICT &&
@@ -188,7 +179,6 @@ class PetHandlerTest {
 
     @Test
     fun `should return 400 when use case throws ValidationException`() {
-        // Arrange
         val userId = "user-123"
         val request = RegisterPetRequest(
             name = "",
@@ -204,7 +194,6 @@ class PetHandlerTest {
             .thenReturn(Mono.just(request))
         whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
 
-        // Act & Assert
         StepVerifier.create(petHandler.registerPet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.BAD_REQUEST &&
@@ -219,7 +208,6 @@ class PetHandlerTest {
 
     @Test
     fun `should return 500 when use case throws unexpected RuntimeException`() {
-        // Arrange
         val userId = "user-123"
         val request = RegisterPetRequest(
             name = "Buddy",
@@ -237,7 +225,6 @@ class PetHandlerTest {
         whenever(registerPetUseCase.execute(any()))
             .thenReturn(Mono.error(RuntimeException("Unexpected database error")))
 
-        // Act & Assert
         StepVerifier.create(petHandler.registerPet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.INTERNAL_SERVER_ERROR &&
@@ -250,11 +237,9 @@ class PetHandlerTest {
             .verifyComplete()
     }
 
-    // ==================== generatePresignedUrl Tests ====================
 
     @Test
     fun `should return 200 with PresignedUrlResponse when URL generation is successful`() {
-        // Arrange
         val userId = "user-123"
         val petId = "pet-123"
         val request = GeneratePresignedUrlRequest(contentType = "image/jpeg")
@@ -272,7 +257,6 @@ class PetHandlerTest {
         whenever(generateAvatarPresignedUrlUseCase.execute(any()))
             .thenReturn(Mono.just(presignedUrl))
 
-        // Act & Assert
         StepVerifier.create(petHandler.generatePresignedUrl(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.OK &&
@@ -288,12 +272,10 @@ class PetHandlerTest {
 
     @Test
     fun `should return 401 when no authentication context is found for generatePresignedUrl`() {
-        // Arrange
         val petId = "pet-123"
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.attribute("userId")).thenReturn(Optional.empty())
 
-        // Act & Assert
         StepVerifier.create(petHandler.generatePresignedUrl(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.UNAUTHORIZED &&
@@ -308,7 +290,6 @@ class PetHandlerTest {
 
     @Test
     fun `should return 404 when use case throws PetNotFoundException in generatePresignedUrl`() {
-        // Arrange
         val userId = "user-123"
         val petId = "pet-999"
         val request = GeneratePresignedUrlRequest(contentType = "image/jpeg")
@@ -320,7 +301,6 @@ class PetHandlerTest {
         whenever(generateAvatarPresignedUrlUseCase.execute(any()))
             .thenReturn(Mono.error(PetNotFoundException(petId)))
 
-        // Act & Assert
         StepVerifier.create(petHandler.generatePresignedUrl(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.NOT_FOUND &&
@@ -334,7 +314,6 @@ class PetHandlerTest {
 
     @Test
     fun `should return 401 when use case throws UnauthorizedException in generatePresignedUrl`() {
-        // Arrange
         val userId = "user-123"
         val petId = "pet-456"
         val request = GeneratePresignedUrlRequest(contentType = "image/jpeg")
@@ -346,7 +325,6 @@ class PetHandlerTest {
         whenever(generateAvatarPresignedUrlUseCase.execute(any()))
             .thenReturn(Mono.error(UnauthorizedException("User does not own this pet")))
 
-        // Act & Assert
         StepVerifier.create(petHandler.generatePresignedUrl(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.UNAUTHORIZED &&
@@ -361,7 +339,6 @@ class PetHandlerTest {
 
     @Test
     fun `should return 400 when use case throws ValidationException in generatePresignedUrl`() {
-        // Arrange
         val userId = "user-123"
         val petId = "pet-123"
         val request = GeneratePresignedUrlRequest(contentType = "invalid/type")
@@ -373,7 +350,6 @@ class PetHandlerTest {
         whenever(generateAvatarPresignedUrlUseCase.execute(any()))
             .thenReturn(Mono.error(ValidationException("Invalid content type")))
 
-        // Act & Assert
         StepVerifier.create(petHandler.generatePresignedUrl(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.BAD_REQUEST &&
@@ -386,11 +362,9 @@ class PetHandlerTest {
             .verifyComplete()
     }
 
-    // ==================== confirmAvatarUpload Tests ====================
 
     @Test
     fun `should return 200 with PetResponse including photoUrl when avatar upload is confirmed`() {
-        // Arrange
         val userId = "user-123"
         val petId = "pet-123"
         val request = ConfirmAvatarUploadRequest(contentType = "image/jpeg")
@@ -416,7 +390,6 @@ class PetHandlerTest {
         whenever(confirmAvatarUploadUseCase.execute(any()))
             .thenReturn(Mono.just(updatedPet))
 
-        // Act & Assert
         StepVerifier.create(petHandler.confirmAvatarUpload(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.OK &&
@@ -432,12 +405,10 @@ class PetHandlerTest {
 
     @Test
     fun `should return 401 when no authentication context is found for confirmAvatarUpload`() {
-        // Arrange
         val petId = "pet-123"
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
         whenever(serverRequest.attribute("userId")).thenReturn(Optional.empty())
 
-        // Act & Assert
         StepVerifier.create(petHandler.confirmAvatarUpload(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.UNAUTHORIZED &&
@@ -452,7 +423,6 @@ class PetHandlerTest {
 
     @Test
     fun `should return 404 when use case throws PetNotFoundException in confirmAvatarUpload`() {
-        // Arrange
         val userId = "user-123"
         val petId = "pet-999"
         val request = ConfirmAvatarUploadRequest(contentType = "image/jpeg")
@@ -464,7 +434,6 @@ class PetHandlerTest {
         whenever(confirmAvatarUploadUseCase.execute(any()))
             .thenReturn(Mono.error(PetNotFoundException(petId)))
 
-        // Act & Assert
         StepVerifier.create(petHandler.confirmAvatarUpload(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.NOT_FOUND &&
@@ -478,7 +447,6 @@ class PetHandlerTest {
 
     @Test
     fun `should return 404 when use case throws PhotoNotFoundException in confirmAvatarUpload`() {
-        // Arrange
         val userId = "user-123"
         val petId = "pet-123"
         val photoKey = "pets/user-123/pet-123/avatar.jpg"
@@ -491,7 +459,6 @@ class PetHandlerTest {
         whenever(confirmAvatarUploadUseCase.execute(any()))
             .thenReturn(Mono.error(PhotoNotFoundException(photoKey)))
 
-        // Act & Assert
         StepVerifier.create(petHandler.confirmAvatarUpload(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.NOT_FOUND &&
@@ -505,7 +472,6 @@ class PetHandlerTest {
 
     @Test
     fun `should return 401 when use case throws UnauthorizedException in confirmAvatarUpload`() {
-        // Arrange
         val userId = "user-123"
         val petId = "pet-456"
         val request = ConfirmAvatarUploadRequest(contentType = "image/jpeg")
@@ -517,7 +483,6 @@ class PetHandlerTest {
         whenever(confirmAvatarUploadUseCase.execute(any()))
             .thenReturn(Mono.error(UnauthorizedException("User does not own this pet")))
 
-        // Act & Assert
         StepVerifier.create(petHandler.confirmAvatarUpload(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.UNAUTHORIZED &&

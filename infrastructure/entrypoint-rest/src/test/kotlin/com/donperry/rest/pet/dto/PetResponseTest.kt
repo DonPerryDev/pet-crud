@@ -11,7 +11,6 @@ class PetResponseTest {
 
     @Test
     fun `PetResponse should be created with all required fields`() {
-        // Given
         val id = "pet-123"
         val name = "Buddy"
         val species = "Dog"
@@ -20,7 +19,6 @@ class PetResponseTest {
         val owner = "John Doe"
         val registrationDate = LocalDate.of(2023, 12, 25)
 
-        // When
         val response = PetResponse(
             id = id,
             name = name,
@@ -35,7 +33,6 @@ class PetResponseTest {
             photoUrl = null
         )
 
-        // Then
         assertEquals(id, response.id)
         assertEquals(name, response.name)
         assertEquals(species, response.species)
@@ -51,7 +48,6 @@ class PetResponseTest {
 
     @Test
     fun `PetResponse should handle null breed`() {
-        // When
         val response = PetResponse(
             id = "pet-456",
             name = "Mittens",
@@ -66,7 +62,6 @@ class PetResponseTest {
             photoUrl = null
         )
 
-        // Then
         assertEquals("pet-456", response.id)
         assertEquals("Mittens", response.name)
         assertEquals("Cat", response.species)
@@ -81,7 +76,6 @@ class PetResponseTest {
 
     @Test
     fun `PetResponse should handle empty string breed`() {
-        // When
         val response = PetResponse(
             id = "pet-789",
             name = "Rex",
@@ -96,7 +90,6 @@ class PetResponseTest {
             photoUrl = null
         )
 
-        // Then
         assertEquals("pet-789", response.id)
         assertEquals("Rex", response.name)
         assertEquals("Dog", response.species)
@@ -111,7 +104,6 @@ class PetResponseTest {
 
     @Test
     fun `PetResponse should handle zero age`() {
-        // When
         val response = PetResponse(
             id = "pet-000",
             name = "NewBorn",
@@ -126,7 +118,6 @@ class PetResponseTest {
             photoUrl = null
         )
 
-        // Then
         assertEquals("pet-000", response.id)
         assertEquals("NewBorn", response.name)
         assertEquals("Dog", response.species)
@@ -141,7 +132,6 @@ class PetResponseTest {
 
     @Test
     fun `PetResponse equality should work correctly with same data`() {
-        // Given
         val registrationDate = LocalDate.of(2023, 10, 15)
         val response1 = PetResponse(
             id = "pet-123",
@@ -171,14 +161,12 @@ class PetResponseTest {
             photoUrl = null
         )
 
-        // Then
         assertEquals(response1, response2)
         assertEquals(response1.hashCode(), response2.hashCode())
     }
 
     @Test
     fun `PetResponse equality should work correctly with different data`() {
-        // Given
         val response1 = PetResponse(
             id = "pet-123",
             name = "Buddy",
@@ -207,14 +195,12 @@ class PetResponseTest {
             photoUrl = null
         )
 
-        // Then
         assertNotEquals(response1, response2)
         assertNotEquals(response1.hashCode(), response2.hashCode())
     }
 
     @Test
     fun `PetResponse equality should work correctly with different ids`() {
-        // Given
         val registrationDate = LocalDate.now()
         val response1 = PetResponse(
             id = "pet-123",
@@ -244,13 +230,11 @@ class PetResponseTest {
             photoUrl = null
         )
 
-        // Then
         assertNotEquals(response1, response2)
     }
 
     @Test
     fun `PetResponse should support component destructuring`() {
-        // Given
         val response = PetResponse(
             id = "pet-123",
             name = "Charlie",
@@ -265,10 +249,8 @@ class PetResponseTest {
             photoUrl = "https://example.com/photo.jpg"
         )
 
-        // When
         val (id, name, species, breed, age, birthdate, weight, nickname, owner, registrationDate, photoUrl) = response
 
-        // Then
         assertEquals("pet-123", id)
         assertEquals("Charlie", name)
         assertEquals("Dog", species)
@@ -284,7 +266,6 @@ class PetResponseTest {
 
     @Test
     fun `PetResponse copy should work correctly`() {
-        // Given
         val originalResponse = PetResponse(
             id = "pet-123",
             name = "Buddy",
@@ -299,10 +280,8 @@ class PetResponseTest {
             photoUrl = null
         )
 
-        // When
         val copiedResponse = originalResponse.copy(age = 4, owner = "Jane Doe")
 
-        // Then
         assertEquals(originalResponse.id, copiedResponse.id)
         assertEquals(originalResponse.name, copiedResponse.name)
         assertEquals(originalResponse.species, copiedResponse.species)
@@ -314,7 +293,6 @@ class PetResponseTest {
 
     @Test
     fun `PetResponse toString should include all fields`() {
-        // Given
         val response = PetResponse(
             id = "pet-123",
             name = "Buddy",
@@ -329,10 +307,8 @@ class PetResponseTest {
             photoUrl = "https://example.com/photo.jpg"
         )
 
-        // When
         val toStringResult = response.toString()
 
-        // Then
         assert(toStringResult.contains("pet-123"))
         assert(toStringResult.contains("Buddy"))
         assert(toStringResult.contains("Dog"))
@@ -344,11 +320,9 @@ class PetResponseTest {
 
     @Test
     fun `PetResponse should handle different date formats`() {
-        // Given
         val futureDate = LocalDate.of(2025, 1, 1)
         val pastDate = LocalDate.of(2020, 6, 15)
 
-        // When
         val futureResponse = PetResponse(
             id = "pet-future",
             name = "Future Pet",
@@ -377,14 +351,12 @@ class PetResponseTest {
             photoUrl = null
         )
 
-        // Then
         assertEquals(futureDate, futureResponse.registrationDate)
         assertEquals(pastDate, pastResponse.registrationDate)
     }
 
     @Test
     fun `PetResponse should handle UUID-style ids`() {
-        // When
         val response = PetResponse(
             id = "550e8400-e29b-41d4-a716-446655440000",
             name = "UUID Pet",
@@ -399,14 +371,12 @@ class PetResponseTest {
             photoUrl = null
         )
 
-        // Then
         assertEquals("550e8400-e29b-41d4-a716-446655440000", response.id)
         assertEquals("UUID Pet", response.name)
     }
 
     @Test
     fun `PetResponse should handle new optional fields`() {
-        // When
         val response = PetResponse(
             id = "pet-123",
             name = "Max",
@@ -421,7 +391,6 @@ class PetResponseTest {
             photoUrl = "https://example.com/max.jpg"
         )
 
-        // Then
         assertEquals("Max", response.name)
         assertEquals(LocalDate.of(2022, 3, 10), response.birthdate)
         assertEquals(BigDecimal("15.7"), response.weight)

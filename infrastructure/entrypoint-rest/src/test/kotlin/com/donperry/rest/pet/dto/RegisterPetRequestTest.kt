@@ -11,7 +11,6 @@ class RegisterPetRequestTest {
 
     @Test
     fun `RegisterPetRequest should be created with all required fields`() {
-        // When
         val request = RegisterPetRequest(
             name = "Buddy",
             species = "Dog",
@@ -22,7 +21,6 @@ class RegisterPetRequestTest {
             nickname = null
         )
 
-        // Then
         assertEquals("Buddy", request.name)
         assertEquals("Dog", request.species)
         assertEquals("Golden Retriever", request.breed)
@@ -34,7 +32,6 @@ class RegisterPetRequestTest {
 
     @Test
     fun `RegisterPetRequest should handle null breed`() {
-        // When
         val request = RegisterPetRequest(
             name = "Mittens",
             species = "Cat",
@@ -45,7 +42,6 @@ class RegisterPetRequestTest {
             nickname = null
         )
 
-        // Then
         assertEquals("Mittens", request.name)
         assertEquals("Cat", request.species)
         assertNull(request.breed)
@@ -57,7 +53,6 @@ class RegisterPetRequestTest {
 
     @Test
     fun `RegisterPetRequest should handle empty string breed`() {
-        // When
         val request = RegisterPetRequest(
             name = "Rex",
             species = "Dog",
@@ -68,7 +63,6 @@ class RegisterPetRequestTest {
             nickname = null
         )
 
-        // Then
         assertEquals("Rex", request.name)
         assertEquals("Dog", request.species)
         assertEquals("", request.breed)
@@ -80,7 +74,6 @@ class RegisterPetRequestTest {
 
     @Test
     fun `RegisterPetRequest should handle zero age`() {
-        // When
         val request = RegisterPetRequest(
             name = "NewBorn",
             species = "Dog",
@@ -91,7 +84,6 @@ class RegisterPetRequestTest {
             nickname = null
         )
 
-        // Then
         assertEquals("NewBorn", request.name)
         assertEquals("Dog", request.species)
         assertEquals("Syrian", request.breed)
@@ -103,7 +95,6 @@ class RegisterPetRequestTest {
 
     @Test
     fun `RegisterPetRequest equality should work correctly with same data`() {
-        // Given
         val request1 = RegisterPetRequest(
             name = "Buddy",
             species = "Dog",
@@ -124,14 +115,12 @@ class RegisterPetRequestTest {
             nickname = null
         )
 
-        // Then
         assertEquals(request1, request2)
         assertEquals(request1.hashCode(), request2.hashCode())
     }
 
     @Test
     fun `RegisterPetRequest equality should work correctly with different data`() {
-        // Given
         val request1 = RegisterPetRequest(
             name = "Buddy",
             species = "Dog",
@@ -152,14 +141,12 @@ class RegisterPetRequestTest {
             nickname = null
         )
 
-        // Then
         assertNotEquals(request1, request2)
         assertNotEquals(request1.hashCode(), request2.hashCode())
     }
 
     @Test
     fun `RegisterPetRequest should support component destructuring`() {
-        // Given
         val request = RegisterPetRequest(
             name = "Charlie",
             species = "Dog",
@@ -170,10 +157,8 @@ class RegisterPetRequestTest {
             nickname = "Chuck"
         )
 
-        // When
         val (name, species, breed, age, birthdate, weight, nickname) = request
 
-        // Then
         assertEquals("Charlie", name)
         assertEquals("Dog", species)
         assertEquals("Labrador", breed)
@@ -185,7 +170,6 @@ class RegisterPetRequestTest {
 
     @Test
     fun `RegisterPetRequest copy should work correctly`() {
-        // Given
         val originalRequest = RegisterPetRequest(
             name = "Buddy",
             species = "Dog",
@@ -196,10 +180,8 @@ class RegisterPetRequestTest {
             nickname = null
         )
 
-        // When
         val copiedRequest = originalRequest.copy(age = 4, nickname = "Bud")
 
-        // Then
         assertEquals(originalRequest.name, copiedRequest.name)
         assertEquals(originalRequest.species, copiedRequest.species)
         assertEquals(originalRequest.breed, copiedRequest.breed)
@@ -209,7 +191,6 @@ class RegisterPetRequestTest {
 
     @Test
     fun `RegisterPetRequest toString should include all fields`() {
-        // Given
         val request = RegisterPetRequest(
             name = "Buddy",
             species = "Dog",
@@ -220,10 +201,8 @@ class RegisterPetRequestTest {
             nickname = "Bud"
         )
 
-        // When
         val toStringResult = request.toString()
 
-        // Then
         assert(toStringResult.contains("Buddy"))
         assert(toStringResult.contains("Dog"))
         assert(toStringResult.contains("Golden Retriever"))
@@ -235,7 +214,6 @@ class RegisterPetRequestTest {
 
     @Test
     fun `RegisterPetRequest should handle special characters in strings`() {
-        // When
         val request = RegisterPetRequest(
             name = "Señor Fluffington",
             species = "Cat",
@@ -246,7 +224,6 @@ class RegisterPetRequestTest {
             nickname = "Señor"
         )
 
-        // Then
         assertEquals("Señor Fluffington", request.name)
         assertEquals("Cat", request.species)
         assertEquals("Maine Coon", request.breed)
@@ -256,11 +233,9 @@ class RegisterPetRequestTest {
 
     @Test
     fun `RegisterPetRequest should handle long strings`() {
-        // Given
         val longName = "A".repeat(100)
         val longBreed = "B".repeat(200)
 
-        // When
         val request = RegisterPetRequest(
             name = longName,
             species = "Dog",
@@ -271,7 +246,6 @@ class RegisterPetRequestTest {
             nickname = null
         )
 
-        // Then
         assertEquals(longName, request.name)
         assertEquals("Dog", request.species)
         assertEquals(longBreed, request.breed)
@@ -280,7 +254,6 @@ class RegisterPetRequestTest {
 
     @Test
     fun `RegisterPetRequest should handle new optional fields`() {
-        // When
         val request = RegisterPetRequest(
             name = "Max",
             species = "Dog",
@@ -291,7 +264,6 @@ class RegisterPetRequestTest {
             nickname = "Maxie"
         )
 
-        // Then
         assertEquals("Max", request.name)
         assertEquals("Dog", request.species)
         assertEquals("Beagle", request.breed)

@@ -44,13 +44,11 @@ class PetRouterTest {
 
     @Test
     fun `should invoke registerPet handler when POST to api pets with valid JWT`() {
-        // Arrange
         val jwt = buildJwt(mapOf("user_id" to "user-123"))
         whenever(petHandler.registerPet(any())).thenReturn(
             ServerResponse.status(201).build()
         )
 
-        // Act & Assert
         webTestClient
             .post()
             .uri("/api/pets")
@@ -65,7 +63,6 @@ class PetRouterTest {
 
     @Test
     fun `should return 401 when POST to api pets without Authorization header`() {
-        // Act & Assert
         webTestClient
             .post()
             .uri("/api/pets")
@@ -80,7 +77,6 @@ class PetRouterTest {
 
     @Test
     fun `should return 401 when POST to api pets with invalid JWT format`() {
-        // Act & Assert
         webTestClient
             .post()
             .uri("/api/pets")
@@ -96,10 +92,8 @@ class PetRouterTest {
 
     @Test
     fun `should return 401 when POST to api pets with JWT missing user_id claim`() {
-        // Arrange
         val jwt = buildJwt(mapOf("sub" to "user-123"))
 
-        // Act & Assert
         webTestClient
             .post()
             .uri("/api/pets")
@@ -115,13 +109,11 @@ class PetRouterTest {
 
     @Test
     fun `should invoke generatePresignedUrl handler when POST to api pets petId avatar presign with valid JWT`() {
-        // Arrange
         val jwt = buildJwt(mapOf("user_id" to "user-123"))
         whenever(petHandler.generatePresignedUrl(any())).thenReturn(
             ServerResponse.ok().build()
         )
 
-        // Act & Assert
         webTestClient
             .post()
             .uri("/api/pets/pet-123/avatar/presign")
@@ -136,7 +128,6 @@ class PetRouterTest {
 
     @Test
     fun `should return 401 when POST to presign endpoint without Authorization header`() {
-        // Act & Assert
         webTestClient
             .post()
             .uri("/api/pets/pet-123/avatar/presign")
@@ -150,13 +141,11 @@ class PetRouterTest {
 
     @Test
     fun `should invoke confirmAvatarUpload handler when POST to api pets petId avatar confirm with valid JWT`() {
-        // Arrange
         val jwt = buildJwt(mapOf("user_id" to "user-123"))
         whenever(petHandler.confirmAvatarUpload(any())).thenReturn(
             ServerResponse.ok().build()
         )
 
-        // Act & Assert
         webTestClient
             .post()
             .uri("/api/pets/pet-123/avatar/confirm")
@@ -171,7 +160,6 @@ class PetRouterTest {
 
     @Test
     fun `should return 401 when POST to confirm endpoint without Authorization header`() {
-        // Act & Assert
         webTestClient
             .post()
             .uri("/api/pets/pet-123/avatar/confirm")
@@ -185,7 +173,6 @@ class PetRouterTest {
 
     @Test
     fun `should return 404 when GET api pets is requested`() {
-        // Act & Assert
         webTestClient
             .get()
             .uri("/api/pets")
@@ -195,7 +182,6 @@ class PetRouterTest {
 
     @Test
     fun `should return 404 when route without api prefix is requested`() {
-        // Act & Assert
         webTestClient
             .post()
             .uri("/pets")
