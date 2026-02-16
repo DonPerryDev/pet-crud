@@ -14,10 +14,12 @@ import com.donperry.rest.pet.dto.GeneratePresignedUrlRequest
 import com.donperry.rest.pet.dto.PetResponse
 import com.donperry.rest.pet.dto.PresignedUrlResponse
 import com.donperry.rest.pet.dto.RegisterPetRequest
+import com.donperry.rest.pet.dto.UpdatePetRequest
 import com.donperry.rest.pet.dto.validate
 import com.donperry.usecase.pet.ConfirmAvatarUploadUseCase
 import com.donperry.usecase.pet.GenerateAvatarPresignedUrlUseCase
 import com.donperry.usecase.pet.RegisterPetUseCase
+import com.donperry.usecase.pet.UpdatePetUseCase
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
@@ -31,7 +33,8 @@ import java.util.logging.Logger
 class PetHandler(
     private val registerPetUseCase: RegisterPetUseCase,
     private val generateAvatarPresignedUrlUseCase: GenerateAvatarPresignedUrlUseCase,
-    private val confirmAvatarUploadUseCase: ConfirmAvatarUploadUseCase
+    private val confirmAvatarUploadUseCase: ConfirmAvatarUploadUseCase,
+    private val updatePetUseCase: UpdatePetUseCase
 ) {
     companion object {
         private val logger: Logger = Logger.getLogger(PetHandler::class.java.name)
@@ -102,6 +105,28 @@ class PetHandler(
                 when (val result = confirmRequest.validate(userId, petId)) {
                     is Validated.Invalid -> Mono.error(ValidationException(result.error))
                     is Validated.Valid -> confirmAvatarUploadUseCase.execute(result.value)
+                        .flatMap { pet -> buildOkResponse(pet) }
+                }
+            }
+        }
+            .onErrorResume { throwable ->
+                handleError(throwable)
+            }
+    }
+
+    fun updatePet(request: ServerRequest): Mono<ServerResponse> {
+        val petId = request.pathVariable("petId")
+        logger.fine("Received pet update request for pet: $petId")
+
+        return Mono.defer {
+            val userId = extractUserId(request)
+            logger.info("[$userId] Updating pet $petId")
+
+            request.bodyToMono(UpdatePetRequest::class.java)
+            .flatMap { updateRequest ->
+                when (val result = updateRequest.validate(petId, userId)) {
+                    is Validated.Invalid -> Mono.error(ValidationException(result.error))
+                    is Validated.Valid -> updatePetUseCase.execute(result.value)
                         .flatMap { pet -> buildOkResponse(pet) }
                 }
             }

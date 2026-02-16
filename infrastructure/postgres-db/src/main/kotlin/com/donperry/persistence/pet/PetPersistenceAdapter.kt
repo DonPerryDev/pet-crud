@@ -51,4 +51,16 @@ class PetPersistenceAdapter(
                 logger.warning("[$petId] Failed to find pet: ${error.message}")
             }
     }
+
+    override fun update(pet: Pet): Mono<Pet> {
+        logger.fine("[${pet.id}] Updating pet in database: name=${pet.name}")
+        return petRepository.save(PetMapper.toEntity(pet))
+            .map { PetMapper.toModel(it) }
+            .doOnNext { updatedPet ->
+                logger.info("[${updatedPet.id}] Pet updated in database successfully")
+            }
+            .doOnError { error ->
+                logger.warning("[${pet.id}] Failed to update pet in database: ${error.message}")
+            }
+    }
 }
