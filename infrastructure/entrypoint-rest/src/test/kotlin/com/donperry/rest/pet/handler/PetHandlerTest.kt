@@ -14,9 +14,11 @@ import com.donperry.rest.pet.dto.GeneratePresignedUrlRequest
 import com.donperry.rest.pet.dto.PetResponse
 import com.donperry.rest.pet.dto.PresignedUrlResponse
 import com.donperry.rest.pet.dto.RegisterPetRequest
+import com.donperry.rest.pet.dto.UpdatePetRequest
 import com.donperry.usecase.pet.ConfirmAvatarUploadUseCase
 import com.donperry.usecase.pet.GenerateAvatarPresignedUrlUseCase
 import com.donperry.usecase.pet.RegisterPetUseCase
+import com.donperry.usecase.pet.UpdatePetUseCase
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
@@ -45,6 +47,9 @@ class PetHandlerTest {
 
     @Mock
     private lateinit var confirmAvatarUploadUseCase: ConfirmAvatarUploadUseCase
+
+    @Mock
+    private lateinit var updatePetUseCase: UpdatePetUseCase
 
     @Mock
     private lateinit var serverRequest: ServerRequest
@@ -490,6 +495,208 @@ class PetHandlerTest {
                         val body = entityResponse.entity() as ErrorResponse
                         body.error == "UNAUTHORIZED" &&
                             body.message == "User does not own this pet"
+                    }
+            }
+            .verifyComplete()
+    }
+
+
+    @Test
+    fun `should return 200 with PetResponse when pet update is successful`() {
+        val userId = "user-123"
+        val petId = "pet-123"
+        val request = UpdatePetRequest(
+            name = "Buddy Updated",
+            species = "CAT",
+            breed = "Persian",
+            age = 4,
+            birthdate = LocalDate.of(2020, 5, 10),
+            weight = BigDecimal("30.0"),
+            nickname = "Buddy Bear",
+            photoUrl = "https://example.com/photo.jpg"
+        )
+
+        val updatedPet = Pet(
+            id = petId,
+            name = "Buddy Updated",
+            species = Species.CAT,
+            breed = "Persian",
+            age = 4,
+            birthdate = LocalDate.of(2020, 5, 10),
+            weight = BigDecimal("30.0"),
+            nickname = "Buddy Bear",
+            owner = userId,
+            registrationDate = LocalDate.of(2023, 6, 1),
+            photoUrl = "https://example.com/photo.jpg"
+        )
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.bodyToMono(UpdatePetRequest::class.java))
+            .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(updatePetUseCase.execute(any())).thenReturn(Mono.just(updatedPet))
+
+        StepVerifier.create(petHandler.updatePet(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.OK &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as PetResponse
+                        body.id == petId &&
+                            body.name == "Buddy Updated" &&
+                            body.species == "CAT" &&
+                            body.breed == "Persian" &&
+                            body.age == 4 &&
+                            body.owner == userId &&
+                            body.photoUrl == "https://example.com/photo.jpg"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 400 when update validation fails for blank name`() {
+        val userId = "user-123"
+        val petId = "pet-123"
+        val request = UpdatePetRequest(
+            name = "",
+            species = "DOG",
+            breed = "Golden Retriever",
+            age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
+            photoUrl = null
+        )
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.bodyToMono(UpdatePetRequest::class.java))
+            .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+
+        StepVerifier.create(petHandler.updatePet(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.BAD_REQUEST &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "VALIDATION_ERROR" &&
+                            body.message == "Pet name cannot be blank"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 400 when update validation fails for invalid species`() {
+        val userId = "user-123"
+        val petId = "pet-123"
+        val request = UpdatePetRequest(
+            name = "Buddy",
+            species = "LIZARD",
+            breed = null,
+            age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
+            photoUrl = null
+        )
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.bodyToMono(UpdatePetRequest::class.java))
+            .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+
+        StepVerifier.create(petHandler.updatePet(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.BAD_REQUEST &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "VALIDATION_ERROR" &&
+                            body.message.contains("Invalid species: LIZARD")
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 401 when user is not owner in update`() {
+        val userId = "user-123"
+        val petId = "pet-456"
+        val request = UpdatePetRequest(
+            name = "Buddy",
+            species = "DOG",
+            breed = "Golden Retriever",
+            age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
+            photoUrl = null
+        )
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.bodyToMono(UpdatePetRequest::class.java))
+            .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(updatePetUseCase.execute(any()))
+            .thenReturn(Mono.error(UnauthorizedException("User does not own this pet")))
+
+        StepVerifier.create(petHandler.updatePet(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.UNAUTHORIZED &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "UNAUTHORIZED" &&
+                            body.message == "User does not own this pet"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 404 when pet not found in update`() {
+        val userId = "user-123"
+        val petId = "pet-999"
+        val request = UpdatePetRequest(
+            name = "Buddy",
+            species = "DOG",
+            breed = "Golden Retriever",
+            age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
+            photoUrl = null
+        )
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.bodyToMono(UpdatePetRequest::class.java))
+            .thenReturn(Mono.just(request))
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(updatePetUseCase.execute(any()))
+            .thenReturn(Mono.error(PetNotFoundException(petId)))
+
+        StepVerifier.create(petHandler.updatePet(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.NOT_FOUND &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "PET_NOT_FOUND"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 401 when no authentication context is found for updatePet`() {
+        val petId = "pet-123"
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.empty())
+
+        StepVerifier.create(petHandler.updatePet(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.UNAUTHORIZED &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "UNAUTHORIZED" &&
+                            body.message == "No authentication found"
                     }
             }
             .verifyComplete()

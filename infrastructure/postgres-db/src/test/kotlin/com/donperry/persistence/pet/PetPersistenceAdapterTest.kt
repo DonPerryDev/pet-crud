@@ -14,6 +14,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 import kotlin.test.assertEquals
@@ -400,5 +401,199 @@ class PetPersistenceAdapterTest {
             .verify()
 
         verify(petRepository).findById(petId)
+    }
+
+    @Test
+    fun `update should convert model to entity, save and convert back to model`() {
+        val petId = UUID.randomUUID()
+        val petModel = Pet(
+            id = petId.toString(),
+            name = "Buddy Updated",
+            species = Species.CAT,
+            breed = "Persian",
+            age = 4,
+            birthdate = LocalDate.of(2020, 5, 10),
+            weight = BigDecimal("30.0"),
+            nickname = "Buddy Bear",
+            owner = "user-123",
+            registrationDate = LocalDate.of(2023, 6, 1),
+            photoUrl = "https://example.com/photo.jpg"
+        )
+
+        val updatedPetData = PetData(
+            id = petId,
+            name = "Buddy Updated",
+            species = "CAT",
+            breed = "Persian",
+            age = 4,
+            birthdate = LocalDate.of(2020, 5, 10),
+            weight = BigDecimal("30.0"),
+            nickname = "Buddy Bear",
+            owner = "user-123",
+            registrationDate = LocalDate.of(2023, 6, 1),
+            photoUrl = "https://example.com/photo.jpg"
+        )
+
+        `when`(petRepository.save(any<PetData>())).thenReturn(Mono.just(updatedPetData))
+
+        val result = petPersistenceAdapter.update(petModel)
+
+        StepVerifier.create(result)
+            .expectNextMatches { updatedPet ->
+                updatedPet.id == petId.toString() &&
+                updatedPet.name == "Buddy Updated" &&
+                updatedPet.species == Species.CAT &&
+                updatedPet.breed == "Persian" &&
+                updatedPet.age == 4 &&
+                updatedPet.birthdate == LocalDate.of(2020, 5, 10) &&
+                updatedPet.weight == BigDecimal("30.0") &&
+                updatedPet.nickname == "Buddy Bear" &&
+                updatedPet.owner == "user-123" &&
+                updatedPet.registrationDate == LocalDate.of(2023, 6, 1) &&
+                updatedPet.photoUrl == "https://example.com/photo.jpg"
+            }
+            .verifyComplete()
+
+        val petDataCaptor = argumentCaptor<PetData>()
+        verify(petRepository).save(petDataCaptor.capture())
+
+        val capturedPetData = petDataCaptor.firstValue
+        assertEquals("Buddy Updated", capturedPetData.name)
+        assertEquals("CAT", capturedPetData.species)
+        assertEquals("Persian", capturedPetData.breed)
+        assertEquals(4, capturedPetData.age)
+        assertEquals(LocalDate.of(2020, 5, 10), capturedPetData.birthdate)
+        assertEquals(BigDecimal("30.0"), capturedPetData.weight)
+        assertEquals("Buddy Bear", capturedPetData.nickname)
+        assertEquals("user-123", capturedPetData.owner)
+        assertEquals(LocalDate.of(2023, 6, 1), capturedPetData.registrationDate)
+        assertEquals("https://example.com/photo.jpg", capturedPetData.photoUrl)
+        assertEquals(petId, capturedPetData.id)
+    }
+
+    @Test
+    fun `update should handle pet with null optional fields`() {
+        val petId = UUID.randomUUID()
+        val petModel = Pet(
+            id = petId.toString(),
+            name = "Buddy",
+            species = Species.DOG,
+            breed = null,
+            age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
+            owner = "user-123",
+            registrationDate = LocalDate.now(),
+            photoUrl = null
+        )
+
+        val updatedPetData = PetData(
+            id = petId,
+            name = "Buddy",
+            species = "DOG",
+            breed = null,
+            age = 3,
+            birthdate = null,
+            weight = null,
+            nickname = null,
+            owner = "user-123",
+            registrationDate = LocalDate.now(),
+            photoUrl = null
+        )
+
+        `when`(petRepository.save(any<PetData>())).thenReturn(Mono.just(updatedPetData))
+
+        val result = petPersistenceAdapter.update(petModel)
+
+        StepVerifier.create(result)
+            .expectNextMatches { updatedPet ->
+                updatedPet.breed == null &&
+                updatedPet.birthdate == null &&
+                updatedPet.weight == null &&
+                updatedPet.nickname == null &&
+                updatedPet.photoUrl == null
+            }
+            .verifyComplete()
+
+        val petDataCaptor = argumentCaptor<PetData>()
+        verify(petRepository).save(petDataCaptor.capture())
+
+        val capturedPetData = petDataCaptor.firstValue
+        assertNull(capturedPetData.breed)
+        assertNull(capturedPetData.birthdate)
+        assertNull(capturedPetData.weight)
+        assertNull(capturedPetData.nickname)
+        assertNull(capturedPetData.photoUrl)
+    }
+
+    @Test
+    fun `update should propagate repository errors`() {
+        val petId = UUID.randomUUID()
+        val petModel = Pet(
+            id = petId.toString(),
+            name = "Buddy",
+            species = Species.DOG,
+            breed = "Golden Retriever",
+            age = 3,
+            owner = "user-123",
+            registrationDate = LocalDate.now()
+        )
+
+        val repositoryError = RuntimeException("Database update failed")
+        `when`(petRepository.save(any<PetData>())).thenReturn(Mono.error(repositoryError))
+
+        val result = petPersistenceAdapter.update(petModel)
+
+        StepVerifier.create(result)
+            .expectErrorMatches { throwable ->
+                throwable is RuntimeException && throwable.message == "Database update failed"
+            }
+            .verify()
+
+        verify(petRepository).save(any())
+    }
+
+    @Test
+    fun `update should preserve id and registrationDate`() {
+        val petId = UUID.randomUUID()
+        val originalRegistrationDate = LocalDate.of(2023, 6, 1)
+        val petModel = Pet(
+            id = petId.toString(),
+            name = "Buddy Updated",
+            species = Species.DOG,
+            breed = "Golden Retriever",
+            age = 4,
+            owner = "user-123",
+            registrationDate = originalRegistrationDate
+        )
+
+        val updatedPetData = PetData(
+            id = petId,
+            name = "Buddy Updated",
+            species = "DOG",
+            breed = "Golden Retriever",
+            age = 4,
+            owner = "user-123",
+            registrationDate = originalRegistrationDate
+        )
+
+        `when`(petRepository.save(any<PetData>())).thenReturn(Mono.just(updatedPetData))
+
+        val result = petPersistenceAdapter.update(petModel)
+
+        StepVerifier.create(result)
+            .expectNextMatches { updatedPet ->
+                updatedPet.id == petId.toString() &&
+                updatedPet.registrationDate == originalRegistrationDate
+            }
+            .verifyComplete()
+
+        val petDataCaptor = argumentCaptor<PetData>()
+        verify(petRepository).save(petDataCaptor.capture())
+
+        val capturedPetData = petDataCaptor.firstValue
+        assertEquals(petId, capturedPetData.id)
+        assertEquals(originalRegistrationDate, capturedPetData.registrationDate)
     }
 }

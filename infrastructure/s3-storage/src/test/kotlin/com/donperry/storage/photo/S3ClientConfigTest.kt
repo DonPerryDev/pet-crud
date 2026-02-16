@@ -1,26 +1,25 @@
 package com.donperry.storage.photo
 
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
-import software.amazon.awssdk.services.s3.S3AsyncClient
-import software.amazon.awssdk.services.s3.presigner.S3Presigner
 
 class S3ClientConfigTest {
 
     private val config = S3ClientConfig()
 
     @Test
-    fun `should create non-null S3AsyncClient instance`() {
-        val client: S3AsyncClient = config.s3AsyncClient()
+    fun `should create S3AsyncClient instance`() {
+        val client = config.s3AsyncClient()
 
-        assert(client != null)
+        assertNotNull(client)
         client.close()
     }
 
     @Test
-    fun `should create non-null S3Presigner instance`() {
-        val presigner: S3Presigner = config.s3Presigner()
+    fun `should create S3Presigner instance`() {
+        val presigner = config.s3Presigner()
 
-        assert(presigner != null)
+        assertNotNull(presigner)
         presigner.close()
     }
 }
