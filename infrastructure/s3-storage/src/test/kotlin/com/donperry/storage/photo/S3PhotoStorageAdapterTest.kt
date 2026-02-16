@@ -25,7 +25,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest
 import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest
-import java.net.URL
+import java.net.URI
 import java.time.Instant
 import java.util.concurrent.CompletableFuture
 
@@ -72,7 +72,7 @@ class S3PhotoStorageAdapterTest {
         val expirationMinutes = 15
 
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
-        val signedUrl = URL("https://test-bucket.s3.amazonaws.com/signed-url")
+        val signedUrl = URI("https://test-bucket.s3.amazonaws.com/signed-url").toURL()
         whenever(mockPresignedRequest.url()).thenReturn(signedUrl)
         whenever(s3Presigner.presignPutObject(any<PutObjectPresignRequest>())).thenReturn(mockPresignedRequest)
 
@@ -94,7 +94,7 @@ class S3PhotoStorageAdapterTest {
         val expirationMinutes = 10
 
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
-        whenever(mockPresignedRequest.url()).thenReturn(URL("https://bucket.s3.amazonaws.com/signed"))
+        whenever(mockPresignedRequest.url()).thenReturn(URI("https://bucket.s3.amazonaws.com/signed").toURL())
         whenever(s3Presigner.presignPutObject(any<PutObjectPresignRequest>())).thenReturn(mockPresignedRequest)
 
         StepVerifier.create(adapter.generatePresignedUrl(userId, petId, contentType, expirationMinutes))
@@ -113,7 +113,7 @@ class S3PhotoStorageAdapterTest {
         val expirationMinutes = 20
 
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
-        whenever(mockPresignedRequest.url()).thenReturn(URL("https://bucket.s3.amazonaws.com/signed"))
+        whenever(mockPresignedRequest.url()).thenReturn(URI("https://bucket.s3.amazonaws.com/signed").toURL())
         whenever(s3Presigner.presignPutObject(any<PutObjectPresignRequest>())).thenReturn(mockPresignedRequest)
 
         StepVerifier.create(adapter.generatePresignedUrl(userId, petId, contentType, expirationMinutes))
@@ -132,7 +132,7 @@ class S3PhotoStorageAdapterTest {
         val expirationMinutes = 30
 
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
-        whenever(mockPresignedRequest.url()).thenReturn(URL("https://bucket.s3.amazonaws.com/signed"))
+        whenever(mockPresignedRequest.url()).thenReturn(URI("https://bucket.s3.amazonaws.com/signed").toURL())
         whenever(s3Presigner.presignPutObject(any<PutObjectPresignRequest>())).thenReturn(mockPresignedRequest)
 
         StepVerifier.create(adapter.generatePresignedUrl(userId, petId, contentType, expirationMinutes))
@@ -151,7 +151,7 @@ class S3PhotoStorageAdapterTest {
         val expirationMinutes = 15
 
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
-        whenever(mockPresignedRequest.url()).thenReturn(URL("https://bucket.s3.amazonaws.com/signed"))
+        whenever(mockPresignedRequest.url()).thenReturn(URI("https://bucket.s3.amazonaws.com/signed").toURL())
         whenever(s3Presigner.presignPutObject(any<PutObjectPresignRequest>())).thenReturn(mockPresignedRequest)
 
         StepVerifier.create(adapter.generatePresignedUrl(userId, petId, contentType, expirationMinutes))
@@ -170,7 +170,7 @@ class S3PhotoStorageAdapterTest {
         val expirationMinutes = 25
 
         val mockPresignedRequest = mock<PresignedPutObjectRequest>()
-        whenever(mockPresignedRequest.url()).thenReturn(URL("https://bucket.s3.amazonaws.com/signed"))
+        whenever(mockPresignedRequest.url()).thenReturn(URI("https://bucket.s3.amazonaws.com/signed").toURL())
         whenever(s3Presigner.presignPutObject(any<PutObjectPresignRequest>())).thenReturn(mockPresignedRequest)
 
         val startTime = Instant.now()
