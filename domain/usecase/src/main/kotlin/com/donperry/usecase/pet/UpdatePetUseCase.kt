@@ -44,7 +44,7 @@ class UpdatePetUseCase(
                 nickname = command.nickname,
                 owner = existingPet.owner,
                 registrationDate = existingPet.registrationDate,
-                photoUrl = command.photoUrl
+                photoUrl = existingPet.photoUrl,
             )
         }
         .flatMap { updatedPet -> petPersistenceGateway.update(updatedPet) }

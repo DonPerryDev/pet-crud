@@ -14,7 +14,6 @@ data class UpdatePetRequest(
     val birthdate: LocalDate?,
     val weight: BigDecimal?,
     val nickname: String?,
-    val photoUrl: String?
 )
 
 fun UpdatePetRequest.validate(petId: String, userId: String): Validated<UpdatePetCommand> {
@@ -36,6 +35,6 @@ fun UpdatePetRequest.validate(petId: String, userId: String): Validated<UpdatePe
         )
 
     return Validated.Valid(
-        UpdatePetCommand(petId, userId, name, parsedSpecies, breed, age, birthdate, weight, nickname, photoUrl)
+        UpdatePetCommand(petId, userId, name, parsedSpecies, breed, age, birthdate, weight, nickname)
     )
 }
