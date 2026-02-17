@@ -175,3 +175,4 @@ domain/usecase/bin
 infrastructure/client-rest/bin
 infrastructure/entrypoint-rest/bin
 infrastructure/postgres-db/bin
+kls_database.db

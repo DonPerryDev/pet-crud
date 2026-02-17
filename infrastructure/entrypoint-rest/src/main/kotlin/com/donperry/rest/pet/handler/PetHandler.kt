@@ -11,6 +11,7 @@ import com.donperry.rest.common.dto.ErrorResponse
 import com.donperry.rest.common.validation.Validated
 import com.donperry.rest.pet.dto.ConfirmAvatarUploadRequest
 import com.donperry.rest.pet.dto.GeneratePresignedUrlRequest
+import com.donperry.rest.pet.dto.PetDetailResponse
 import com.donperry.rest.pet.dto.PetListResponse
 import com.donperry.rest.pet.dto.PetResponse
 import com.donperry.rest.pet.dto.PresignedUrlResponse
@@ -20,6 +21,7 @@ import com.donperry.rest.pet.dto.validate
 import com.donperry.usecase.pet.ConfirmAvatarUploadUseCase
 import com.donperry.usecase.pet.DeletePetUseCase
 import com.donperry.usecase.pet.GenerateAvatarPresignedUrlUseCase
+import com.donperry.usecase.pet.GetPetByIdUseCase
 import com.donperry.usecase.pet.ListPetsUseCase
 import com.donperry.usecase.pet.RegisterPetUseCase
 import com.donperry.usecase.pet.UpdatePetUseCase
@@ -39,7 +41,8 @@ class PetHandler(
     private val confirmAvatarUploadUseCase: ConfirmAvatarUploadUseCase,
     private val updatePetUseCase: UpdatePetUseCase,
     private val deletePetUseCase: DeletePetUseCase,
-    private val listPetsUseCase: ListPetsUseCase
+    private val listPetsUseCase: ListPetsUseCase,
+    private val getPetByIdUseCase: GetPetByIdUseCase
 ) {
     companion object {
         private val logger: Logger = Logger.getLogger(PetHandler::class.java.name)
@@ -179,6 +182,27 @@ class PetHandler(
             }
     }
 
+    fun getPetDetail(request: ServerRequest): Mono<ServerResponse> {
+        val petId = request.pathVariable("petId")
+        logger.fine("Received get pet detail request for pet: $petId")
+
+        return Mono.defer {
+            val userId = extractUserId(request)
+            logger.info("[$userId] Fetching pet detail for $petId")
+
+            getPetByIdUseCase.execute(petId, userId)
+                .map { pet -> toPetDetailResponse(pet) }
+                .flatMap { petDetail ->
+                    ServerResponse.ok()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .bodyValue(petDetail)
+                }
+        }
+            .onErrorResume { throwable ->
+                handleError(throwable)
+            }
+    }
+
     private fun extractUserId(request: ServerRequest): String =
         request.attribute("userId")
             .map { it as String }
@@ -205,6 +229,21 @@ class PetHandler(
             name = pet.name,
             species = pet.species.name,
             breed = pet.breed,
+            photoUrl = pet.photoUrl
+        )
+
+    private fun toPetDetailResponse(pet: com.donperry.model.pet.Pet): PetDetailResponse =
+        PetDetailResponse(
+            id = pet.id!!,
+            name = pet.name,
+            species = pet.species.name,
+            breed = pet.breed,
+            age = pet.age,
+            birthdate = pet.birthdate,
+            weight = pet.weight,
+            nickname = pet.nickname,
+            owner = pet.owner,
+            registrationDate = pet.registrationDate,
             photoUrl = pet.photoUrl
         )
 

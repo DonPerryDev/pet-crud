@@ -18,6 +18,7 @@ import com.donperry.rest.pet.dto.UpdatePetRequest
 import com.donperry.usecase.pet.ConfirmAvatarUploadUseCase
 import com.donperry.usecase.pet.DeletePetUseCase
 import com.donperry.usecase.pet.GenerateAvatarPresignedUrlUseCase
+import com.donperry.usecase.pet.GetPetByIdUseCase
 import com.donperry.usecase.pet.ListPetsUseCase
 import com.donperry.usecase.pet.RegisterPetUseCase
 import com.donperry.usecase.pet.UpdatePetUseCase
@@ -58,6 +59,9 @@ class PetHandlerTest {
 
     @Mock
     private lateinit var listPetsUseCase: ListPetsUseCase
+
+    @Mock
+    private lateinit var getPetByIdUseCase: GetPetByIdUseCase
 
     @Mock
     private lateinit var serverRequest: ServerRequest
@@ -1071,6 +1075,254 @@ class PetHandlerTest {
                     (response as EntityResponse<*>).let { entityResponse ->
                         val body = entityResponse.entity() as List<*>
                         body.size == 10
+                    }
+            }
+            .verifyComplete()
+    }
+
+
+    @Test
+    fun `should return 200 with PetDetailResponse when pet is found and user is owner`() {
+        val userId = "user-123"
+        val petId = "pet-123"
+        val expectedPet = Pet(
+            id = petId,
+            name = "Buddy",
+            species = Species.DOG,
+            breed = "Golden Retriever",
+            age = 3,
+            birthdate = LocalDate.of(2021, 1, 15),
+            weight = BigDecimal("25.5"),
+            nickname = "Bud",
+            owner = userId,
+            registrationDate = LocalDate.of(2023, 6, 1),
+            photoUrl = "https://example.com/photo.jpg"
+        )
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(getPetByIdUseCase.execute(petId, userId)).thenReturn(Mono.just(expectedPet))
+
+        StepVerifier.create(petHandler.getPetDetail(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.OK &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as com.donperry.rest.pet.dto.PetDetailResponse
+                        body.id == petId &&
+                            body.name == "Buddy" &&
+                            body.species == "DOG" &&
+                            body.breed == "Golden Retriever" &&
+                            body.age == 3 &&
+                            body.birthdate == LocalDate.of(2021, 1, 15) &&
+                            body.weight == BigDecimal("25.5") &&
+                            body.nickname == "Bud" &&
+                            body.owner == userId &&
+                            body.registrationDate == LocalDate.of(2023, 6, 1) &&
+                            body.photoUrl == "https://example.com/photo.jpg"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 200 with PetDetailResponse with minimal fields when pet has no optional data`() {
+        val userId = "user-456"
+        val petId = "pet-456"
+        val expectedPet = Pet(
+            id = petId,
+            name = "Rex",
+            species = Species.CAT,
+            breed = null,
+            age = 1,
+            owner = userId,
+            registrationDate = LocalDate.now(),
+            photoUrl = null
+        )
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(getPetByIdUseCase.execute(petId, userId)).thenReturn(Mono.just(expectedPet))
+
+        StepVerifier.create(petHandler.getPetDetail(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.OK &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as com.donperry.rest.pet.dto.PetDetailResponse
+                        body.id == petId &&
+                            body.name == "Rex" &&
+                            body.species == "CAT" &&
+                            body.breed == null &&
+                            body.age == 1 &&
+                            body.birthdate == null &&
+                            body.weight == null &&
+                            body.nickname == null &&
+                            body.owner == userId &&
+                            body.photoUrl == null
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 404 when pet not found in getPetDetail`() {
+        val userId = "user-123"
+        val petId = "pet-999"
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(getPetByIdUseCase.execute(petId, userId))
+            .thenReturn(Mono.error(PetNotFoundException(petId)))
+
+        StepVerifier.create(petHandler.getPetDetail(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.NOT_FOUND &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "PET_NOT_FOUND"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 404 when pet is soft-deleted in getPetDetail`() {
+        val userId = "user-123"
+        val petId = "pet-deleted"
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(getPetByIdUseCase.execute(petId, userId))
+            .thenReturn(Mono.error(PetNotFoundException(petId)))
+
+        StepVerifier.create(petHandler.getPetDetail(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.NOT_FOUND &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "PET_NOT_FOUND" &&
+                            body.message == "Pet with id $petId not found"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 401 when user is not owner in getPetDetail`() {
+        val userId = "user-123"
+        val petId = "pet-456"
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(getPetByIdUseCase.execute(petId, userId))
+            .thenReturn(Mono.error(UnauthorizedException("Not authorized to view this pet")))
+
+        StepVerifier.create(petHandler.getPetDetail(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.UNAUTHORIZED &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "UNAUTHORIZED" &&
+                            body.message == "Not authorized to view this pet"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 401 when no authentication context is found for getPetDetail`() {
+        val petId = "pet-123"
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.empty())
+
+        StepVerifier.create(petHandler.getPetDetail(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.UNAUTHORIZED &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "UNAUTHORIZED" &&
+                            body.message == "No authentication found"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 500 when use case throws unexpected RuntimeException in getPetDetail`() {
+        val userId = "user-123"
+        val petId = "pet-123"
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(getPetByIdUseCase.execute(petId, userId))
+            .thenReturn(Mono.error(RuntimeException("Database connection failed")))
+
+        StepVerifier.create(petHandler.getPetDetail(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.INTERNAL_SERVER_ERROR &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "INTERNAL_ERROR" &&
+                            body.message == "Database connection failed"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should map all species correctly in getPetDetail`() {
+        val userId = "user-multi"
+
+        val dogPet = Pet(
+            id = "pet-dog",
+            name = "Max",
+            species = Species.DOG,
+            breed = "Labrador",
+            age = 4,
+            owner = userId,
+            registrationDate = LocalDate.of(2022, 1, 10),
+            photoUrl = "https://example.com/max.jpg"
+        )
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn("pet-dog")
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(getPetByIdUseCase.execute("pet-dog", userId)).thenReturn(Mono.just(dogPet))
+
+        StepVerifier.create(petHandler.getPetDetail(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.OK &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as com.donperry.rest.pet.dto.PetDetailResponse
+                        body.species == "DOG"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return pet with zero age in getPetDetail`() {
+        val userId = "user-new-owner"
+        val petId = "pet-puppy"
+        val youngPet = Pet(
+            id = petId,
+            name = "Puppy",
+            species = Species.DOG,
+            breed = "Mixed",
+            age = 0,
+            owner = userId,
+            registrationDate = LocalDate.now(),
+            photoUrl = null
+        )
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(getPetByIdUseCase.execute(petId, userId)).thenReturn(Mono.just(youngPet))
+
+        StepVerifier.create(petHandler.getPetDetail(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.OK &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as com.donperry.rest.pet.dto.PetDetailResponse
+                        body.age == 0
                     }
             }
             .verifyComplete()
