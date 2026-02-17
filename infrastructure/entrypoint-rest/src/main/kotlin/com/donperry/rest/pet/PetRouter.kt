@@ -20,8 +20,8 @@ class PetRouter {
     fun petRoutes(petHandler: PetHandler): RouterFunction<ServerResponse> {
         return router {
             "/api/pets".nest {
+                GET("", petHandler::listPets)
                 contentType(MediaType.APPLICATION_JSON).nest {
-                    GET("", petHandler::listPets)
                     POST("", petHandler::registerPet)
                     PUT("/{petId}", petHandler::updatePet)
                     DELETE("/{petId}", petHandler::deletePet)
