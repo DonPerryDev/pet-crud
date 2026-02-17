@@ -4,6 +4,7 @@ import com.donperry.model.pet.Pet
 import com.donperry.model.pet.gateway.PetPersistenceGateway
 import com.donperry.persistence.pet.mapper.PetMapper
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.util.UUID
 import java.util.logging.Logger
@@ -61,6 +62,29 @@ class PetPersistenceAdapter(
             }
             .doOnError { error ->
                 logger.warning("[${pet.id}] Failed to update pet in database: ${error.message}")
+            }
+    }
+
+    override fun softDelete(petId: String): Mono<Void> {
+        logger.fine("[$petId] Soft-deleting pet in database")
+        return petRepository.softDeleteById(UUID.fromString(petId))
+            .doOnSuccess {
+                logger.info("[$petId] Pet soft-deleted in database successfully")
+            }
+            .doOnError { error ->
+                logger.warning("[$petId] Failed to soft-delete pet in database: ${error.message}")
+            }
+    }
+
+    override fun findAllByOwner(userId: String): Flux<Pet> {
+        logger.fine("[$userId] Finding all active pets by owner")
+        return petRepository.findAllByOwnerAndDeletedAtIsNull(userId)
+            .map { PetMapper.toModel(it) }
+            .doOnComplete {
+                logger.fine("[$userId] Completed finding active pets by owner")
+            }
+            .doOnError { error ->
+                logger.warning("[$userId] Failed to find active pets by owner: ${error.message}")
             }
     }
 }

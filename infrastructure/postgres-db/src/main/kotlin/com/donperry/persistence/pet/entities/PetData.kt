@@ -5,6 +5,7 @@ import org.springframework.data.relational.core.mapping.Column
 import org.springframework.data.relational.core.mapping.Table
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Table(name = "pets")
@@ -30,5 +31,7 @@ data class PetData(
     @Column("registration_date")
     val registrationDate: LocalDate,
     @Column("photo_url")
-    val photoUrl: String? = null
+    val photoUrl: String? = null,
+    @Column("deleted_at")
+    val deletedAt: LocalDateTime? = null
 )

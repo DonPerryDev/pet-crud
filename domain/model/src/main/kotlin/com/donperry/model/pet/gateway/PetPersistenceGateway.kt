@@ -1,6 +1,7 @@
 package com.donperry.model.pet.gateway
 
 import com.donperry.model.pet.Pet
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 interface PetPersistenceGateway {
@@ -8,4 +9,6 @@ interface PetPersistenceGateway {
     fun countByOwner(userId: String): Mono<Long>
     fun findById(petId: String): Mono<Pet>
     fun update(pet: Pet): Mono<Pet>
+    fun softDelete(petId: String): Mono<Void>
+    fun findAllByOwner(userId: String): Flux<Pet>
 }

@@ -23,6 +23,7 @@ class PetRouter {
                 contentType(MediaType.APPLICATION_JSON).nest {
                     POST("", petHandler::registerPet)
                     PUT("/{petId}", petHandler::updatePet)
+                    DELETE("/{petId}", petHandler::deletePet)
                     POST("/{petId}/avatar/presign", petHandler::generatePresignedUrl)
                     POST("/{petId}/avatar/confirm", petHandler::confirmAvatarUpload)
                 }

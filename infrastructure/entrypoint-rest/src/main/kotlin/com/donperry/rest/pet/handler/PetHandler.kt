@@ -17,6 +17,7 @@ import com.donperry.rest.pet.dto.RegisterPetRequest
 import com.donperry.rest.pet.dto.UpdatePetRequest
 import com.donperry.rest.pet.dto.validate
 import com.donperry.usecase.pet.ConfirmAvatarUploadUseCase
+import com.donperry.usecase.pet.DeletePetUseCase
 import com.donperry.usecase.pet.GenerateAvatarPresignedUrlUseCase
 import com.donperry.usecase.pet.RegisterPetUseCase
 import com.donperry.usecase.pet.UpdatePetUseCase
@@ -34,7 +35,8 @@ class PetHandler(
     private val registerPetUseCase: RegisterPetUseCase,
     private val generateAvatarPresignedUrlUseCase: GenerateAvatarPresignedUrlUseCase,
     private val confirmAvatarUploadUseCase: ConfirmAvatarUploadUseCase,
-    private val updatePetUseCase: UpdatePetUseCase
+    private val updatePetUseCase: UpdatePetUseCase,
+    private val deletePetUseCase: DeletePetUseCase
 ) {
     companion object {
         private val logger: Logger = Logger.getLogger(PetHandler::class.java.name)
@@ -130,6 +132,23 @@ class PetHandler(
                         .flatMap { pet -> buildOkResponse(pet) }
                 }
             }
+        }
+            .onErrorResume { throwable ->
+                handleError(throwable)
+            }
+    }
+
+    fun deletePet(request: ServerRequest): Mono<ServerResponse> {
+        val petId = request.pathVariable("petId")
+        logger.fine("Received pet delete request for pet: $petId")
+
+        return Mono.defer {
+            val userId = extractUserId(request)
+            logger.info("[$userId] Deleting pet $petId")
+
+            val command = com.donperry.model.pet.DeletePetCommand(petId, userId)
+            deletePetUseCase.execute(command)
+                .then(ServerResponse.noContent().build())
         }
             .onErrorResume { throwable ->
                 handleError(throwable)
