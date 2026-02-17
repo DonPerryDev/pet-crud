@@ -13,5 +13,4 @@ data class UpdatePetCommand(
     val birthdate: LocalDate?,
     val weight: BigDecimal?,
     val nickname: String?,
-    val photoUrl: String?
 )

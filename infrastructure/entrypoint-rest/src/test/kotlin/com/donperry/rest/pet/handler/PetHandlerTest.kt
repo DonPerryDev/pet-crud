@@ -513,7 +513,6 @@ class PetHandlerTest {
             birthdate = LocalDate.of(2020, 5, 10),
             weight = BigDecimal("30.0"),
             nickname = "Buddy Bear",
-            photoUrl = "https://example.com/photo.jpg"
         )
 
         val updatedPet = Pet(
@@ -527,7 +526,6 @@ class PetHandlerTest {
             nickname = "Buddy Bear",
             owner = userId,
             registrationDate = LocalDate.of(2023, 6, 1),
-            photoUrl = "https://example.com/photo.jpg"
         )
 
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
@@ -547,7 +545,7 @@ class PetHandlerTest {
                             body.breed == "Persian" &&
                             body.age == 4 &&
                             body.owner == userId &&
-                            body.photoUrl == "https://example.com/photo.jpg"
+                            body.photoUrl == null
                     }
             }
             .verifyComplete()
@@ -565,7 +563,6 @@ class PetHandlerTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
@@ -597,7 +594,6 @@ class PetHandlerTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
@@ -629,7 +625,6 @@ class PetHandlerTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
@@ -663,7 +658,6 @@ class PetHandlerTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(serverRequest.pathVariable("petId")).thenReturn(petId)

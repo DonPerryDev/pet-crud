@@ -61,7 +61,6 @@ class UpdatePetUseCaseTest {
             nickname = "Buddy Bear",
             owner = userId,
             registrationDate = LocalDate.of(2023, 6, 1),
-            photoUrl = "https://example.com/photo.jpg"
         )
 
         val command = UpdatePetCommand(
@@ -74,7 +73,6 @@ class UpdatePetUseCaseTest {
             birthdate = LocalDate.of(2020, 5, 10),
             weight = BigDecimal("30.0"),
             nickname = "Buddy Bear",
-            photoUrl = "https://example.com/photo.jpg"
         )
 
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(existingPet))
@@ -114,7 +112,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(existingPet))
@@ -145,7 +142,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.empty())
@@ -198,7 +194,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(existingPet))
@@ -229,7 +224,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(any())).thenReturn(Mono.empty())
@@ -256,7 +250,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(any())).thenReturn(Mono.empty())
@@ -283,7 +276,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(any())).thenReturn(Mono.empty())
@@ -310,7 +302,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = BigDecimal.ZERO,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(any())).thenReturn(Mono.empty())
@@ -337,7 +328,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = BigDecimal("-5.0"),
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(any())).thenReturn(Mono.empty())
@@ -366,7 +356,6 @@ class UpdatePetUseCaseTest {
             birthdate = futureBirthdate,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(any())).thenReturn(Mono.empty())
@@ -393,7 +382,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(any())).thenReturn(Mono.empty())
@@ -446,7 +434,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(existingPet))
@@ -489,7 +476,6 @@ class UpdatePetUseCaseTest {
             birthdate = LocalDate.of(2019, 3, 15),
             weight = BigDecimal("12.5"),
             nickname = "Maxie",
-            photoUrl = "https://example.com/photo.jpg"
         )
 
         val updatedPet = Pet(
@@ -503,7 +489,6 @@ class UpdatePetUseCaseTest {
             nickname = "Maxie",
             owner = userId,
             registrationDate = LocalDate.of(2023, 6, 1),
-            photoUrl = "https://example.com/photo.jpg"
         )
 
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(existingPet))
@@ -524,7 +509,7 @@ class UpdatePetUseCaseTest {
         assertEquals(LocalDate.of(2019, 3, 15), capturedPet.birthdate)
         assertEquals(BigDecimal("12.5"), capturedPet.weight)
         assertEquals("Maxie", capturedPet.nickname)
-        assertEquals("https://example.com/photo.jpg", capturedPet.photoUrl)
+        assertEquals(null, capturedPet.photoUrl)
     }
 
     @Test
@@ -543,7 +528,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.error(findError))
@@ -585,7 +569,6 @@ class UpdatePetUseCaseTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         whenever(petPersistenceGateway.findById(petId)).thenReturn(Mono.just(existingPet))

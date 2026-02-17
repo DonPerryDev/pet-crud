@@ -20,13 +20,12 @@ class UpdatePetRequestTest {
             birthdate = LocalDate.of(2021, 1, 15),
             weight = BigDecimal("25.5"),
             nickname = "Bud",
-            photoUrl = "https://example.com/photo.jpg"
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Valid)
-        val command = (result as Validated.Valid).value
+        val command = result.value
         assertEquals("pet-123", command.petId)
         assertEquals("user-123", command.userId)
         assertEquals("Buddy", command.name)
@@ -36,7 +35,6 @@ class UpdatePetRequestTest {
         assertEquals(LocalDate.of(2021, 1, 15), command.birthdate)
         assertEquals(BigDecimal("25.5"), command.weight)
         assertEquals("Bud", command.nickname)
-        assertEquals("https://example.com/photo.jpg", command.photoUrl)
     }
 
     @Test
@@ -49,13 +47,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("", "user-123")
 
         assertTrue(result is Validated.Invalid)
-        assertEquals("Pet ID cannot be blank", (result as Validated.Invalid).error)
+        assertEquals("Pet ID cannot be blank", result.error)
     }
 
     @Test
@@ -68,13 +65,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Invalid)
-        assertEquals("Pet name cannot be blank", (result as Validated.Invalid).error)
+        assertEquals("Pet name cannot be blank", result.error)
     }
 
     @Test
@@ -87,13 +83,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Invalid)
-        assertEquals("Pet species cannot be blank", (result as Validated.Invalid).error)
+        assertEquals("Pet species cannot be blank", result.error)
     }
 
     @Test
@@ -106,13 +101,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Invalid)
-        assertTrue((result as Validated.Invalid).error.contains("Invalid species: LIZARD"))
+        assertTrue(result.error.contains("Invalid species: LIZARD"))
         assertTrue(result.error.contains("Must be one of: DOG, CAT"))
     }
 
@@ -126,13 +120,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Invalid)
-        assertEquals("Pet age must be zero or greater", (result as Validated.Invalid).error)
+        assertEquals("Pet age must be zero or greater", result.error)
     }
 
     @Test
@@ -145,13 +138,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = BigDecimal.ZERO,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Invalid)
-        assertEquals("Pet weight must be greater than zero", (result as Validated.Invalid).error)
+        assertEquals("Pet weight must be greater than zero", result.error)
     }
 
     @Test
@@ -164,13 +156,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = BigDecimal("-5.0"),
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Invalid)
-        assertEquals("Pet weight must be greater than zero", (result as Validated.Invalid).error)
+        assertEquals("Pet weight must be greater than zero", result.error)
     }
 
     @Test
@@ -183,13 +174,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Invalid)
-        assertEquals("Pet breed cannot be blank", (result as Validated.Invalid).error)
+        assertEquals("Pet breed cannot be blank", result.error)
     }
 
     @Test
@@ -202,13 +192,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = "",
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Invalid)
-        assertEquals("Pet nickname cannot be blank", (result as Validated.Invalid).error)
+        assertEquals("Pet nickname cannot be blank", result.error)
     }
 
     @Test
@@ -221,13 +210,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Valid)
-        val command = (result as Validated.Valid).value
+        val command = result.value
         assertEquals(0, command.age)
     }
 
@@ -241,13 +229,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Valid)
-        val command = (result as Validated.Valid).value
+        val command = result.value
         assertEquals(null, command.breed)
     }
 
@@ -261,13 +248,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Valid)
-        val command = (result as Validated.Valid).value
+        val command = result.value
         assertEquals(null, command.nickname)
     }
 
@@ -281,13 +267,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Valid)
-        val command = (result as Validated.Valid).value
+        val command = result.value
         assertEquals(null, command.weight)
     }
 
@@ -301,34 +286,13 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Valid)
-        val command = (result as Validated.Valid).value
+        val command = result.value
         assertEquals(null, command.birthdate)
-    }
-
-    @Test
-    fun `should accept null photoUrl as valid`() {
-        val request = UpdatePetRequest(
-            name = "Buddy",
-            species = "DOG",
-            breed = "Golden Retriever",
-            age = 3,
-            birthdate = null,
-            weight = null,
-            nickname = null,
-            photoUrl = null
-        )
-
-        val result = request.validate("pet-123", "user-123")
-
-        assertTrue(result is Validated.Valid)
-        val command = (result as Validated.Valid).value
-        assertEquals(null, command.photoUrl)
     }
 
     @Test
@@ -341,12 +305,11 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val resultLowercase = requestLowercase.validate("pet-123", "user-123")
         assertTrue(resultLowercase is Validated.Valid)
-        assertEquals(Species.DOG, (resultLowercase as Validated.Valid).value.species)
+        assertEquals(Species.DOG, resultLowercase.value.species)
 
         val requestMixed = UpdatePetRequest(
             name = "Mittens",
@@ -356,12 +319,11 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = null,
             nickname = null,
-            photoUrl = null
         )
 
         val resultMixed = requestMixed.validate("pet-456", "user-456")
         assertTrue(resultMixed is Validated.Valid)
-        assertEquals(Species.CAT, (resultMixed as Validated.Valid).value.species)
+        assertEquals(Species.CAT, resultMixed.value.species)
     }
 
     @Test
@@ -374,13 +336,12 @@ class UpdatePetRequestTest {
             birthdate = null,
             weight = BigDecimal("0.1"),
             nickname = null,
-            photoUrl = null
         )
 
         val result = request.validate("pet-123", "user-123")
 
         assertTrue(result is Validated.Valid)
-        val command = (result as Validated.Valid).value
+        val command = result.value
         assertEquals(BigDecimal("0.1"), command.weight)
     }
 }
