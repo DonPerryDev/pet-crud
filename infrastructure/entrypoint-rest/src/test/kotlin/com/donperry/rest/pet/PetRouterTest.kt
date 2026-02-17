@@ -172,12 +172,20 @@ class PetRouterTest {
     }
 
     @Test
-    fun `should return 404 when GET api pets is requested`() {
+    fun `should invoke listPets handler when GET to api pets with valid JWT`() {
+        val jwt = buildJwt(mapOf("user_id" to "user-123"))
+        whenever(petHandler.listPets(any())).thenReturn(
+            ServerResponse.ok().build()
+        )
+
         webTestClient
             .get()
             .uri("/api/pets")
+            .header("Authorization", "Bearer $jwt")
             .exchange()
-            .expectStatus().isNotFound
+            .expectStatus().isOk
+
+        verify(petHandler).listPets(any())
     }
 
     @Test

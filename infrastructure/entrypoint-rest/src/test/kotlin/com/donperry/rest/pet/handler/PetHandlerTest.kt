@@ -18,6 +18,7 @@ import com.donperry.rest.pet.dto.UpdatePetRequest
 import com.donperry.usecase.pet.ConfirmAvatarUploadUseCase
 import com.donperry.usecase.pet.DeletePetUseCase
 import com.donperry.usecase.pet.GenerateAvatarPresignedUrlUseCase
+import com.donperry.usecase.pet.ListPetsUseCase
 import com.donperry.usecase.pet.RegisterPetUseCase
 import com.donperry.usecase.pet.UpdatePetUseCase
 import org.junit.jupiter.api.Test
@@ -54,6 +55,9 @@ class PetHandlerTest {
 
     @Mock
     private lateinit var deletePetUseCase: DeletePetUseCase
+
+    @Mock
+    private lateinit var listPetsUseCase: ListPetsUseCase
 
     @Mock
     private lateinit var serverRequest: ServerRequest
@@ -790,6 +794,284 @@ class PetHandlerTest {
         StepVerifier.create(petHandler.deletePet(serverRequest))
             .expectNextMatches { response ->
                 response.statusCode() == HttpStatus.NO_CONTENT
+            }
+            .verifyComplete()
+    }
+
+
+    @Test
+    fun `should return 200 with list of pets when user has multiple pets`() {
+        val userId = "user-123"
+        val pet1 = Pet(
+            id = "pet-1",
+            name = "Buddy",
+            species = Species.DOG,
+            breed = "Golden Retriever",
+            age = 3,
+            owner = userId,
+            registrationDate = LocalDate.of(2023, 1, 15),
+            photoUrl = "https://example.com/buddy.jpg"
+        )
+        val pet2 = Pet(
+            id = "pet-2",
+            name = "Mittens",
+            species = Species.CAT,
+            breed = "Persian",
+            age = 2,
+            owner = userId,
+            registrationDate = LocalDate.of(2023, 6, 20),
+            photoUrl = null
+        )
+
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(listPetsUseCase.execute(userId))
+            .thenReturn(reactor.core.publisher.Flux.just(pet1, pet2))
+
+        StepVerifier.create(petHandler.listPets(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.OK &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as List<*>
+                        body.size == 2 &&
+                            (body[0] as com.donperry.rest.pet.dto.PetListResponse).let { dto ->
+                                dto.id == "pet-1" &&
+                                    dto.name == "Buddy" &&
+                                    dto.species == "DOG" &&
+                                    dto.breed == "Golden Retriever" &&
+                                    dto.photoUrl == "https://example.com/buddy.jpg"
+                            } &&
+                            (body[1] as com.donperry.rest.pet.dto.PetListResponse).let { dto ->
+                                dto.id == "pet-2" &&
+                                    dto.name == "Mittens" &&
+                                    dto.species == "CAT" &&
+                                    dto.breed == "Persian" &&
+                                    dto.photoUrl == null
+                            }
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 200 with empty list when user has no pets`() {
+        val userId = "user-no-pets"
+
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(listPetsUseCase.execute(userId))
+            .thenReturn(reactor.core.publisher.Flux.empty())
+
+        StepVerifier.create(petHandler.listPets(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.OK &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as List<*>
+                        body.isEmpty()
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 200 with single pet when user has one pet`() {
+        val userId = "user-456"
+        val pet = Pet(
+            id = "pet-solo",
+            name = "Rex",
+            species = Species.DOG,
+            breed = null,
+            age = 1,
+            owner = userId,
+            registrationDate = LocalDate.now(),
+            photoUrl = null
+        )
+
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(listPetsUseCase.execute(userId))
+            .thenReturn(reactor.core.publisher.Flux.just(pet))
+
+        StepVerifier.create(petHandler.listPets(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.OK &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as List<*>
+                        body.size == 1 &&
+                            (body[0] as com.donperry.rest.pet.dto.PetListResponse).let { dto ->
+                                dto.id == "pet-solo" &&
+                                    dto.name == "Rex" &&
+                                    dto.species == "DOG" &&
+                                    dto.breed == null &&
+                                    dto.photoUrl == null
+                            }
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should map Pet to PetListResponse correctly with all species`() {
+        val userId = "user-variety"
+        val dog1 = Pet(
+            id = "pet-dog-1",
+            name = "Max",
+            species = Species.DOG,
+            breed = "Labrador",
+            age = 4,
+            owner = userId,
+            registrationDate = LocalDate.now(),
+            photoUrl = "https://example.com/max.jpg"
+        )
+        val cat1 = Pet(
+            id = "pet-cat-1",
+            name = "Whiskers",
+            species = Species.CAT,
+            breed = "Siamese",
+            age = 2,
+            owner = userId,
+            registrationDate = LocalDate.now(),
+            photoUrl = null
+        )
+        val dog2 = Pet(
+            id = "pet-dog-2",
+            name = "Buddy",
+            species = Species.DOG,
+            breed = "Beagle",
+            age = 3,
+            owner = userId,
+            registrationDate = LocalDate.now(),
+            photoUrl = null
+        )
+        val cat2 = Pet(
+            id = "pet-cat-2",
+            name = "Mittens",
+            species = Species.CAT,
+            breed = "Persian",
+            age = 1,
+            owner = userId,
+            registrationDate = LocalDate.now(),
+            photoUrl = null
+        )
+
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(listPetsUseCase.execute(userId))
+            .thenReturn(reactor.core.publisher.Flux.just(dog1, cat1, dog2, cat2))
+
+        StepVerifier.create(petHandler.listPets(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.OK &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as List<*>
+                        body.size == 4 &&
+                            (body[0] as com.donperry.rest.pet.dto.PetListResponse).species == "DOG" &&
+                            (body[1] as com.donperry.rest.pet.dto.PetListResponse).species == "CAT" &&
+                            (body[2] as com.donperry.rest.pet.dto.PetListResponse).species == "DOG" &&
+                            (body[3] as com.donperry.rest.pet.dto.PetListResponse).species == "CAT"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 401 when no authentication context is found for listPets`() {
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.empty())
+
+        StepVerifier.create(petHandler.listPets(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.UNAUTHORIZED &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "UNAUTHORIZED" &&
+                            body.message == "No authentication found"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 500 when use case throws unexpected RuntimeException in listPets`() {
+        val userId = "user-error"
+
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(listPetsUseCase.execute(userId))
+            .thenReturn(reactor.core.publisher.Flux.error(RuntimeException("Database connection failed")))
+
+        StepVerifier.create(petHandler.listPets(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.INTERNAL_SERVER_ERROR &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "INTERNAL_ERROR" &&
+                            body.message == "Database connection failed"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should only include required fields in PetListResponse`() {
+        val userId = "user-full"
+        val pet = Pet(
+            id = "pet-123",
+            name = "Buddy",
+            species = Species.DOG,
+            breed = "Golden Retriever",
+            age = 3,
+            birthdate = LocalDate.of(2021, 1, 15),
+            weight = BigDecimal("25.5"),
+            nickname = "Bud",
+            owner = userId,
+            registrationDate = LocalDate.of(2023, 6, 1),
+            photoUrl = "https://example.com/buddy.jpg"
+        )
+
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(listPetsUseCase.execute(userId))
+            .thenReturn(reactor.core.publisher.Flux.just(pet))
+
+        StepVerifier.create(petHandler.listPets(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.OK &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as List<*>
+                        body.size == 1 &&
+                            (body[0] as com.donperry.rest.pet.dto.PetListResponse).let { dto ->
+                                dto.id == "pet-123" &&
+                                    dto.name == "Buddy" &&
+                                    dto.species == "DOG" &&
+                                    dto.breed == "Golden Retriever" &&
+                                    dto.photoUrl == "https://example.com/buddy.jpg"
+                            }
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should handle maximum allowed pets (10 pets) in listPets`() {
+        val userId = "user-max"
+        val pets = (1..10).map { index ->
+            Pet(
+                id = "pet-$index",
+                name = "Pet $index",
+                species = Species.DOG,
+                breed = "Mixed",
+                age = index,
+                owner = userId,
+                registrationDate = LocalDate.now(),
+                photoUrl = null
+            )
+        }
+
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(listPetsUseCase.execute(userId))
+            .thenReturn(reactor.core.publisher.Flux.fromIterable(pets))
+
+        StepVerifier.create(petHandler.listPets(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.OK &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as List<*>
+                        body.size == 10
+                    }
             }
             .verifyComplete()
     }

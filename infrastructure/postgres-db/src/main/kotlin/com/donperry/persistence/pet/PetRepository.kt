@@ -17,7 +17,7 @@ interface PetRepository : ReactiveCrudRepository<PetData, UUID> {
     @Query("SELECT * FROM petapp.pets WHERE id = :id AND deleted_at IS NULL")
     override fun findById(id: UUID): Mono<PetData>
 
-    @Query("SELECT * FROM petapp.pets WHERE owner = :owner AND deleted_at IS NULL")
+    @Query("SELECT * FROM petapp.pets WHERE owner = :owner AND deleted_at IS NULL ORDER BY registration_date DESC")
     fun findAllByOwnerAndDeletedAtIsNull(owner: String): Flux<PetData>
 
     @Modifying
