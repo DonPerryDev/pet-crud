@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 import java.math.BigDecimal
@@ -595,5 +596,163 @@ class PetPersistenceAdapterTest {
         val capturedPetData = petDataCaptor.firstValue
         assertEquals(petId, capturedPetData.id)
         assertEquals(originalRegistrationDate, capturedPetData.registrationDate)
+    }
+
+    @Test
+    fun `softDelete should delegate to repository`() {
+        val petId = UUID.randomUUID()
+
+        `when`(petRepository.softDeleteById(petId)).thenReturn(Mono.empty())
+
+        val result = petPersistenceAdapter.softDelete(petId.toString())
+
+        StepVerifier.create(result)
+            .verifyComplete()
+
+        verify(petRepository).softDeleteById(petId)
+    }
+
+    @Test
+    fun `softDelete should propagate repository errors`() {
+        val petId = UUID.randomUUID()
+        val repositoryError = RuntimeException("Database update failed")
+
+        `when`(petRepository.softDeleteById(petId)).thenReturn(Mono.error(repositoryError))
+
+        val result = petPersistenceAdapter.softDelete(petId.toString())
+
+        StepVerifier.create(result)
+            .expectErrorMatches { throwable ->
+                throwable is RuntimeException && throwable.message == "Database update failed"
+            }
+            .verify()
+
+        verify(petRepository).softDeleteById(petId)
+    }
+
+    @Test
+    fun `findAllByOwner should return active pets only`() {
+        val userId = "user-123"
+        val petData1 = PetData(
+            id = UUID.randomUUID(),
+            name = "Buddy",
+            species = "DOG",
+            breed = "Golden Retriever",
+            age = 3,
+            owner = userId,
+            registrationDate = LocalDate.now(),
+            photoUrl = null,
+            deletedAt = null
+        )
+
+        val petData2 = PetData(
+            id = UUID.randomUUID(),
+            name = "Max",
+            species = "CAT",
+            breed = "Persian",
+            age = 2,
+            owner = userId,
+            registrationDate = LocalDate.now(),
+            photoUrl = null,
+            deletedAt = null
+        )
+
+        `when`(petRepository.findAllByOwnerAndDeletedAtIsNull(userId))
+            .thenReturn(Flux.just(petData1, petData2))
+
+        val result = petPersistenceAdapter.findAllByOwner(userId)
+
+        StepVerifier.create(result)
+            .expectNextMatches { pet ->
+                pet.name == "Buddy" &&
+                pet.species == Species.DOG &&
+                pet.deletedAt == null
+            }
+            .expectNextMatches { pet ->
+                pet.name == "Max" &&
+                pet.species == Species.CAT &&
+                pet.deletedAt == null
+            }
+            .verifyComplete()
+
+        verify(petRepository).findAllByOwnerAndDeletedAtIsNull(userId)
+    }
+
+    @Test
+    fun `findAllByOwner should return empty when no active pets`() {
+        val userId = "user-new"
+
+        `when`(petRepository.findAllByOwnerAndDeletedAtIsNull(userId))
+            .thenReturn(Flux.empty())
+
+        val result = petPersistenceAdapter.findAllByOwner(userId)
+
+        StepVerifier.create(result)
+            .verifyComplete()
+
+        verify(petRepository).findAllByOwnerAndDeletedAtIsNull(userId)
+    }
+
+    @Test
+    fun `findAllByOwner should propagate repository errors`() {
+        val userId = "user-123"
+        val repositoryError = RuntimeException("Database query failed")
+
+        `when`(petRepository.findAllByOwnerAndDeletedAtIsNull(userId))
+            .thenReturn(Flux.error(repositoryError))
+
+        val result = petPersistenceAdapter.findAllByOwner(userId)
+
+        StepVerifier.create(result)
+            .expectErrorMatches { throwable ->
+                throwable is RuntimeException && throwable.message == "Database query failed"
+            }
+            .verify()
+
+        verify(petRepository).findAllByOwnerAndDeletedAtIsNull(userId)
+    }
+
+    @Test
+    fun `findAllByOwner should convert all fields correctly`() {
+        val userId = "user-123"
+        val birthdate = LocalDate.of(2021, 1, 15)
+        val weight = BigDecimal("25.5")
+        val petData = PetData(
+            id = UUID.randomUUID(),
+            name = "Buddy",
+            species = "DOG",
+            breed = "Golden Retriever",
+            age = 3,
+            birthdate = birthdate,
+            weight = weight,
+            nickname = "Bud",
+            owner = userId,
+            registrationDate = LocalDate.now(),
+            photoUrl = "https://example.com/photo.jpg",
+            deletedAt = null
+        )
+
+        `when`(petRepository.findAllByOwnerAndDeletedAtIsNull(userId))
+            .thenReturn(Flux.just(petData))
+
+        val result = petPersistenceAdapter.findAllByOwner(userId)
+
+        StepVerifier.create(result)
+            .expectNextMatches { pet ->
+                pet.id == petData.id.toString() &&
+                pet.name == "Buddy" &&
+                pet.species == Species.DOG &&
+                pet.breed == "Golden Retriever" &&
+                pet.age == 3 &&
+                pet.birthdate == birthdate &&
+                pet.weight == weight &&
+                pet.nickname == "Bud" &&
+                pet.owner == userId &&
+                pet.photoUrl == "https://example.com/photo.jpg" &&
+                pet.deletedAt == null
+            }
+            .verifyComplete()
+
+        verify(petRepository).findAllByOwnerAndDeletedAtIsNull(userId)
     }
 }

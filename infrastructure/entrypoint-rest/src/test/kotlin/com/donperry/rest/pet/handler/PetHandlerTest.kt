@@ -16,6 +16,7 @@ import com.donperry.rest.pet.dto.PresignedUrlResponse
 import com.donperry.rest.pet.dto.RegisterPetRequest
 import com.donperry.rest.pet.dto.UpdatePetRequest
 import com.donperry.usecase.pet.ConfirmAvatarUploadUseCase
+import com.donperry.usecase.pet.DeletePetUseCase
 import com.donperry.usecase.pet.GenerateAvatarPresignedUrlUseCase
 import com.donperry.usecase.pet.RegisterPetUseCase
 import com.donperry.usecase.pet.UpdatePetUseCase
@@ -50,6 +51,9 @@ class PetHandlerTest {
 
     @Mock
     private lateinit var updatePetUseCase: UpdatePetUseCase
+
+    @Mock
+    private lateinit var deletePetUseCase: DeletePetUseCase
 
     @Mock
     private lateinit var serverRequest: ServerRequest
@@ -692,6 +696,100 @@ class PetHandlerTest {
                         body.error == "UNAUTHORIZED" &&
                             body.message == "No authentication found"
                     }
+            }
+            .verifyComplete()
+    }
+
+
+    @Test
+    fun `should return 204 when pet deletion is successful`() {
+        val userId = "user-123"
+        val petId = "pet-123"
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(deletePetUseCase.execute(any())).thenReturn(Mono.empty())
+
+        StepVerifier.create(petHandler.deletePet(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.NO_CONTENT
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 404 when pet not found in delete`() {
+        val userId = "user-123"
+        val petId = "pet-999"
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(deletePetUseCase.execute(any()))
+            .thenReturn(Mono.error(PetNotFoundException(petId)))
+
+        StepVerifier.create(petHandler.deletePet(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.NOT_FOUND &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "PET_NOT_FOUND"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 401 when no authentication context is found for deletePet`() {
+        val petId = "pet-123"
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.empty())
+
+        StepVerifier.create(petHandler.deletePet(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.UNAUTHORIZED &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "UNAUTHORIZED" &&
+                            body.message == "No authentication found"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 500 when use case throws unexpected RuntimeException in delete`() {
+        val userId = "user-123"
+        val petId = "pet-123"
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(deletePetUseCase.execute(any()))
+            .thenReturn(Mono.error(RuntimeException("Unexpected database error")))
+
+        StepVerifier.create(petHandler.deletePet(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.INTERNAL_SERVER_ERROR &&
+                    (response as EntityResponse<*>).let { entityResponse ->
+                        val body = entityResponse.entity() as ErrorResponse
+                        body.error == "INTERNAL_ERROR" &&
+                            body.message == "Unexpected database error"
+                    }
+            }
+            .verifyComplete()
+    }
+
+    @Test
+    fun `should return 204 when deleting already deleted pet (idempotent)`() {
+        val userId = "user-123"
+        val petId = "pet-123"
+
+        whenever(serverRequest.pathVariable("petId")).thenReturn(petId)
+        whenever(serverRequest.attribute("userId")).thenReturn(Optional.of(userId))
+        whenever(deletePetUseCase.execute(any())).thenReturn(Mono.empty())
+
+        StepVerifier.create(petHandler.deletePet(serverRequest))
+            .expectNextMatches { response ->
+                response.statusCode() == HttpStatus.NO_CONTENT
             }
             .verifyComplete()
     }

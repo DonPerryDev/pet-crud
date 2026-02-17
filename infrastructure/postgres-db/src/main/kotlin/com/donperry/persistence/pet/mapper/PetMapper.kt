@@ -18,7 +18,8 @@ object PetMapper {
             nickname = petModel.nickname,
             owner = petModel.owner,
             registrationDate = petModel.registrationDate,
-            photoUrl = petModel.photoUrl
+            photoUrl = petModel.photoUrl,
+            deletedAt = petModel.deletedAt
         )
 
     fun toModel(petData: PetData): Pet =
@@ -33,6 +34,7 @@ object PetMapper {
             nickname = petData.nickname,
             owner = petData.owner,
             registrationDate = petData.registrationDate,
-            photoUrl = petData.photoUrl
+            photoUrl = petData.photoUrl,
+            deletedAt = petData.deletedAt
         )
 }

@@ -2,6 +2,7 @@ package com.donperry.model.pet
 
 import java.math.BigDecimal
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 data class Pet(
     val id: String? = null,
@@ -14,5 +15,6 @@ data class Pet(
     val nickname: String? = null,
     val owner: String,
     val registrationDate: LocalDate,
-    val photoUrl: String? = null
+    val photoUrl: String? = null,
+    val deletedAt: LocalDateTime? = null
 )
