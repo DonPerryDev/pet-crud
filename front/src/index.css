@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary: #b8c9a3;
+  --color-sage-dark: #1b2e1b;
+  --color-sage-muted: #6b7f6b;
+  --color-background-dark: #0f172a;
+}
+
+/* ── Light palette (default) ── */
+:root {
+  --color-bg: #ffffff;
+  --color-text: #213547;
+  --color-text-muted: #6b7280;
+  --color-surface: rgba(255, 255, 255, 0.6);
+  --color-surface-solid: #ffffff;
+  --color-border: rgba(122, 162, 122, 0.4);
+  --color-link: #646cff;
+  --color-link-hover: #747bff;
+  --color-button-bg: #f9f9f9;
+  --color-nav-bg: rgba(255, 255, 255, 0.8);
+  --color-footer-bg: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Dark palette ── */
+.dark {
+  --color-bg: #0f172a;
+  --color-text: #e2e8f0;
+  --color-text-muted: #94a3b8;
+  --color-surface: rgba(30, 41, 59, 0.6);
+  --color-surface-solid: #1e293b;
+  --color-border: rgba(122, 162, 122, 0.3);
+  --color-link: #818cf8;
+  --color-link-hover: #a5b4fc;
+  --color-button-bg: #1e293b;
+  --color-nav-bg: rgba(15, 23, 42, 0.8);
+  --color-footer-bg: rgba(15, 23, 42, 0.5);
+}
+
+/* ── Base styles ── */
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
