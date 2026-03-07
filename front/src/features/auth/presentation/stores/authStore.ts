@@ -4,10 +4,7 @@ import { tokenStorage } from '../../infrastructure/token-storage'
 import type { AuthUser } from '../../domain/entities'
 
 // DEV ONLY — remove before connecting a real identity provider
-const DEV_TOKEN =
-  'eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiIsImtpZCI6IjQyNmEyNGVkOGRlMTk4ZTNkNmY1Njk0ZWU4Nzk3OTYxIn0' +
-  '.eyJ1c2VyX2lkIjoiNTUwZTg0MDAtZTI5Yi00MWQ0LWE3MTYtNDQ2NjU1NDQwMDAwIiwiZW1haWwiOiJ1c2VyQGV4YW1wbGUuY29tIiwicm9sZSI6InVzZXIiLCJpYXQiOjE3MDgwMTI4MDAsImV4cCI6MTcwODA5OTIwMH0' +
-  '.e0rQZSNtfO30GFslODk_dgYF4wstm5JVRsjAft5AfdV8U1v6clWGo3h0XqHL6zw23b90axRrb55S40tk-LcJpw'
+const DEV_TOKEN = (import.meta.env['VITE_DEV_TOKEN'] as string | undefined) ?? null
 
 function decodeUser(token: string): AuthUser | null {
   try {
@@ -31,7 +28,7 @@ interface AuthState {
 }
 
 function initFromStorage(): Pick<AuthState, 'token' | 'user' | 'isAuthenticated'> {
-  const token = tokenStorage.get() ?? (import.meta.env.DEV ? DEV_TOKEN : null)
+  const token = tokenStorage.get() ?? DEV_TOKEN
   if (token === null) return { token: null, user: null, isAuthenticated: false }
 
   const user = decodeUser(token)
