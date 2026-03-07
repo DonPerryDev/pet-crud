@@ -2,6 +2,10 @@
 
 Pet registration and management application. React frontend + Kotlin/Spring Boot backend.
 
+> **Live app:** _Coming soon — will be updated once officially deployed._
+
+**Docs:** [Project summary](docs/summary.md)
+
 ---
 
 ## Requirements

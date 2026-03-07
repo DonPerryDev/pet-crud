@@ -168,7 +168,6 @@ build/
 
 .claude
 CLAUDE.md
-docs
 applications/app-service/bin
 domain/model/bin
 domain/usecase/bin
