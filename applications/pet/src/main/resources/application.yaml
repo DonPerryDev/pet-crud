@@ -25,7 +25,7 @@ aws:
 
 app:
   security:
-    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3005}
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3005,http://localhost:5173}
 
 management:
   server:
